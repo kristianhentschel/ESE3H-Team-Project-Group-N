@@ -11,13 +11,13 @@ finddupl: finddupl.o mlist.o mentry.o
 
 findduplLL: finddupl.o mlistLL.o mentry.o
 
-finddupl.o: finddupl.c
-
-mlist.o: mlist.c mlist.h mentry.h
+finddupl.o: finddupl.c mlist.h mentry.h
 
 mentry.o: mentry.c mentry.h
 
-mlistLL.o: mlistLL.c mlist.h
+mlist.o: mlist.c mlist.h mentry.h
+
+mlistLL.o: mlistLL.c mlist.h mentry.h
 
 clean:
 	rm -f *.o finddupl findduplLL
