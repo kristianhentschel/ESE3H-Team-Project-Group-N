@@ -13,7 +13,7 @@ findduplLL: finddupl.o mlistLL.o mentry.o
 
 finddupl.o: finddupl.c
 
-mlist.o: mlist.c mlist.h
+mlist.o: mlist.c mlist.h mentry.h
 
 mentry.o: mentry.c mentry.h
 
