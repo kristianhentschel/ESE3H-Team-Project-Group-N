@@ -3,7 +3,7 @@
 # Makefile TODO may be replaced by version provided by Joe Sventek
 
 CC = gcc
-CFLAGS = -W -Wall
+CFLAGS = -W -Wall -ggdb
 
 all: finddupl findduplLL
 
@@ -18,6 +18,10 @@ mentry.o: mentry.c mentry.h
 mlist.o: mlist.c mlist.h mentry.h
 
 mlistLL.o: mlistLL.c mlist.h mentry.h
+
+drive_mentry: drive_mentry.o mentry.o
+
+drive_mentry.o: mentry.h mentry.c
 
 clean:
 	rm -f *.o finddupl findduplLL
