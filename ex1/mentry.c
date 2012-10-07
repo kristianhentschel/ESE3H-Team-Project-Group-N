@@ -6,30 +6,55 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "mentry.h"
 
 #define BUFFER_SIZE 1000
 #define ADDR_LINES 3
 
+static char* surname_get(char *name);
+
 /* me_get returns the next file entry, or NULL if end of file*/
 MEntry *me_get(FILE *fd)
 {
-	/* TODO
-	 * malloc storage for mentry?
-	 */
+	/* TODO */
 
 	MEntry* e;	
 	char address[BUFFER_SIZE];
+	char* line;
 	int c, n, nlines;
 	
+	enum {NAME, STREET, POSTCODE} state;
+	
+	state = NAME;
+
 	e = (MEntry *) malloc(sizeof(MEntry));
 
 	nlines = n = 0;
+	line = &address[0];
+
 
 	while ((c = getchar()) != EOF && n < (BUFFER_SIZE - 1) && nlines < ADDR_LINES) {
-		printf("%4d: %c\n", n, c);
 		address[n++] = c;
+		/* TODO remove outer check and switch statement.
+		   work on characters, put them into buffers or sth and increase
+		   state when c==\n.*/
 		if (c == '\n') {
+			address[n] = '\0';
+			switch (state) {
+				case NAME:
+					printf("Name: %s\n", surname_get(line));
+					state++;
+					break;
+				case STREET:
+					printf("House Number: %d\n", atoi(line));
+					state++;
+					break;
+				case POSTCODE:
+					printf("Post code: %s\n", line);
+					break;
+			}
+			line = &address[n];
 			nlines++;
 		}
 	}
@@ -38,7 +63,7 @@ MEntry *me_get(FILE *fd)
 	e->full_address = (char *) malloc(n);
 	strcpy(e->full_address, address);
 
-	printf("%s\n", e->full_address);
+	return e;
 }
 
 /* me_hash computes a hash of the MEntry, mod size */
@@ -67,3 +92,28 @@ void me_destroy(MEntry *me)
 {
 	/* TODO */
 }
+
+/* extracts the surname (last alphabetic token) from given string and returns
+   malloc'd char pointer to surname. */
+char* surname_get(char *name)
+{
+	int c;
+	char *start, *result;
+	
+	start = name;
+
+	while ((c = *(name++)) != '\n') {
+		if ( !isalpha(c) ) {
+			/* set start to point to beginning of word*/
+			start = name;
+		}
+	}
+	
+
+	result = (char*) malloc(name-start);
+	result = strcpy(result, start); 
+	result[name - start] = '\0';
+
+	return result;
+}
+
