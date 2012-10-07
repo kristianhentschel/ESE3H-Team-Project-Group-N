@@ -2,7 +2,7 @@
 #include "mentry.h"
 
 int main(){
-	me_get(stdin);
+	printf("===\n%s===\n", me_get(stdin)->full_address);
 	return 0;
 }
 
