@@ -4,12 +4,41 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "mentry.h"
+
+#define BUFFER_SIZE 1000
+#define ADDR_LINES 3
 
 /* me_get returns the next file entry, or NULL if end of file*/
 MEntry *me_get(FILE *fd)
 {
-	/* TODO */
+	/* TODO
+	 * malloc storage for mentry?
+	 */
+
+	MEntry* e;	
+	char address[BUFFER_SIZE];
+	int c, n, nlines;
+	
+	e = (MEntry *) malloc(sizeof(MEntry));
+
+	nlines = n = 0;
+
+	while ((c = getchar()) != EOF && n < (BUFFER_SIZE - 1) && nlines < ADDR_LINES) {
+		printf("%4d: %c\n", n, c);
+		address[n++] = c;
+		if (c == '\n') {
+			nlines++;
+		}
+	}
+	address[n] = '\0';
+
+	e->full_address = (char *) malloc(n);
+	strcpy(e->full_address, address);
+
+	printf("%s\n", e->full_address);
 }
 
 /* me_hash computes a hash of the MEntry, mod size */
