@@ -44,6 +44,7 @@ MEntry *me_get(FILE *fd)
 			switch (state) {
 				case NAME:
 					printf("Name: %s\n", surname_get(line));
+					
 					state++;
 					break;
 				case STREET:
@@ -94,7 +95,9 @@ void me_destroy(MEntry *me)
 }
 
 /* extracts the surname (last alphabetic token) from given string and returns
-   malloc'd char pointer to surname. */
+ * malloc'd char pointer to surname.
+ * TODO convert to lower case. use buffer array rather than pointer magic?
+ */
 char* surname_get(char *name)
 {
 	int c, len;
@@ -128,4 +131,5 @@ char* surname_get(char *name)
 
 	return result;
 }
+
 
