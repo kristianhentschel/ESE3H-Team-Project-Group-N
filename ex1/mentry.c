@@ -97,22 +97,34 @@ void me_destroy(MEntry *me)
    malloc'd char pointer to surname. */
 char* surname_get(char *name)
 {
-	int c;
+	int c, len;
 	char *start, *result;
-	
+
+	enum {OUT, IN} state;
+
 	start = name;
+	len = 0;
+	state = OUT;
 
 	while ((c = *(name++)) != '\n') {
-		if ( !isalpha(c) ) {
-			/* set start to point to beginning of word*/
-			start = name;
+		if (isalpha(c)) {
+			if( state == OUT ) {
+				state = IN;
+				start = name - 1;
+				len = 0;
+			}
+			len++;
+		} else {
+			state = OUT;
 		}
 	}
-	
 
-	result = (char*) malloc(name-start);
-	result = strcpy(result, start); 
-	result[name - start] = '\0';
+	/* len + 1 for name and terminating \0 */
+	result = (char*) malloc(len + 1);
+
+	/* copy len characters and set terminating \0 */
+	result = strncpy(result, start, len);
+	result[len] = '\0';
 
 	return result;
 }
