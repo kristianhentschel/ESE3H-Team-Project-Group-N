@@ -13,6 +13,8 @@
 #define ADDR_LINES 3
 
 static char* surname_get(char *name);
+static char* postcode_get(char *name);
+static char* strtolower(char *str);
 
 /* me_get returns the next file entry, or NULL if end of file*/
 MEntry *me_get(FILE *fd)
@@ -43,8 +45,8 @@ MEntry *me_get(FILE *fd)
 			address[n] = '\0';
 			switch (state) {
 				case NAME:
-					printf("Name: %s\n", surname_get(line));
-					
+					e->surname = strtolower(surname_get(line));
+					printf("Name: %s\n", e->surname);
 					state++;
 					break;
 				case STREET:
@@ -52,7 +54,8 @@ MEntry *me_get(FILE *fd)
 					state++;
 					break;
 				case POSTCODE:
-					printf("Post code: %s\n", line);
+					e->postcode = strtolower(postcode_get(line));
+					printf("Post code: %s\n", e->postcode);
 					break;
 			}
 			line = &address[n];
@@ -96,11 +99,11 @@ void me_destroy(MEntry *me)
 
 /* extracts the surname (last alphabetic token) from given string and returns
  * malloc'd char pointer to surname.
- * TODO convert to lower case. use buffer array rather than pointer magic?
+ * TODO use buffer array rather than pointer magic?
  */
 char* surname_get(char *name)
 {
-	int c, len;
+	int c, len; //TODO c should be a char
 	char *start, *result;
 
 	enum {OUT, IN} state;
@@ -132,4 +135,30 @@ char* surname_get(char *name)
 	return result;
 }
 
+/* removes trailing \n from postcode line and copies string into new malloc'd pointer. */
+char* postcode_get(char *postcode)
+{
+	char *result;
+	int len;
 
+	for (len = 0; postcode[len] != '\n'; len++)
+		;
+
+	result = malloc(len+1);
+	result = strncpy(result, postcode, len);
+	result[len] = '\0';
+	
+	return result;
+}   
+
+/* converts a string to lower case in place. */
+char* strtolower(char *str)
+{
+	char* p;
+	p = str;
+	while ( *p ) {
+	       	*p = tolower(*p);
+		p++;
+	}
+	return str;
+}
