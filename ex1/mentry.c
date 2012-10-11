@@ -19,9 +19,9 @@ static char* strtolower(char *str);
 MEntry *me_get(FILE *fd)
 {
 	MEntry* e;	
-	char address[BUFFER_SIZE];
+	char address[ADDRESS_BUFFER];
 	char* line;
-	int c, n, nlines;
+	int c, n;
 	enum {NAME, STREET, POSTCODE, DONE} state;
 	
 	e = (MEntry *) malloc(sizeof(MEntry));
@@ -35,7 +35,7 @@ MEntry *me_get(FILE *fd)
 	line = address;
 
 	/* get characters of current address block, up to and including trailing \n */
-	while ((c = getchar()) != EOF && n < (ADDRESS_BUFFER - 1) && state != DONE) {
+	while ((c = fgetc(fd)) != EOF && n < (ADDRESS_BUFFER - 1) && state != DONE) {
 		address[n++] = c;
 		if (c == '\n') {
 			address[n] = '\0';
@@ -48,6 +48,8 @@ MEntry *me_get(FILE *fd)
 					break;
 				case POSTCODE:
 					e->postcode = strtolower(postcode_get(line));
+					break;
+				case DONE:
 					break;
 			}
 			line = &address[n];
@@ -66,6 +68,7 @@ MEntry *me_get(FILE *fd)
 unsigned long me_hash(MEntry *me, unsigned long size)
 {
 	/* TODO */
+	return 0UL;
 }
 
 /* me_print prints the full address on fd */
@@ -82,6 +85,7 @@ void me_print(MEntry *me, FILE *fd)
 int me_compare(MEntry *me1, MEntry *me2)
 {
 	/* TODO */
+	return 0;
 }
 
 /* me_destroy destroys the mail entry
