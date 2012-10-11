@@ -9,8 +9,7 @@
 #include <ctype.h>
 #include "mentry.h"
 
-#define BUFFER_SIZE 1000
-#define ADDR_LINES 3
+#define ADDRESS_BUFFER 1024
 
 static char* surname_get(char *name);
 static char* postcode_get(char *name);
@@ -19,47 +18,40 @@ static char* strtolower(char *str);
 /* me_get returns the next file entry, or NULL if end of file*/
 MEntry *me_get(FILE *fd)
 {
-	/* TODO */
-
 	MEntry* e;	
 	char address[BUFFER_SIZE];
 	char* line;
 	int c, n, nlines;
+	enum {NAME, STREET, POSTCODE, DONE} state;
 	
-	enum {NAME, STREET, POSTCODE} state;
-	
-	state = NAME;
-
 	e = (MEntry *) malloc(sizeof(MEntry));
+	if (!e) {
+		/* malloc failure */
+		return NULL; 
+	}
 
-	nlines = n = 0;
-	line = &address[0];
+	state = NAME;
+	n = 0;
+	line = address;
 
-
-	while ((c = getchar()) != EOF && n < (BUFFER_SIZE - 1) && nlines < ADDR_LINES) {
+	/* get characters of current address block, up to and including trailing \n */
+	while ((c = getchar()) != EOF && n < (ADDRESS_BUFFER - 1) && state != DONE) {
 		address[n++] = c;
-		/* TODO remove outer check and switch statement.
-		   work on characters, put them into buffers or sth and increase
-		   state when c==\n.*/
 		if (c == '\n') {
 			address[n] = '\0';
 			switch (state) {
 				case NAME:
 					e->surname = strtolower(surname_get(line));
-					printf("Name: %s\n", e->surname);
-					state++;
 					break;
 				case STREET:
-					printf("House Number: %d\n", atoi(line));
-					state++;
+					e->house_number = atoi(line);
 					break;
 				case POSTCODE:
 					e->postcode = strtolower(postcode_get(line));
-					printf("Post code: %s\n", e->postcode);
 					break;
 			}
 			line = &address[n];
-			nlines++;
+			state++;
 		}
 	}
 	address[n] = '\0';
@@ -79,7 +71,9 @@ unsigned long me_hash(MEntry *me, unsigned long size)
 /* me_print prints the full address on fd */
 void me_print(MEntry *me, FILE *fd)
 {
-	/* TODO */
+	char *c = me->full_address;
+	while (*(c++) != '\0')
+		fputc(*c, fd);
 }
 
 /* me_compare compares two mail entries, returning <0, 0, >0 if
