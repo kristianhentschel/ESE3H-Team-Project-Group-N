@@ -94,7 +94,11 @@ int me_compare(MEntry *me1, MEntry *me2)
  */
 void me_destroy(MEntry *me)
 {
-	/* TODO */
+	/* TODO test with valgrind */
+	free(me->surname);
+	free(me->postcode);
+	free(me->full_address);
+	free(me);	
 }
 
 /* extracts the surname (last alphabetic token) from given string and returns
@@ -128,11 +132,15 @@ char* surname_get(char *name)
 	/* len + 1 for name and terminating \0 */
 	result = (char*) malloc(len + 1);
 
-	/* copy len characters and set terminating \0 */
-	result = strncpy(result, start, len);
-	result[len] = '\0';
+	if (!result) {
+		return NULL;
+	} else {
+		/* copy len characters and set terminating \0 */
+		result = strncpy(result, start, len);
+		*(result+len) = '\0';
 
-	return result;
+		return result;
+	}
 }
 
 /* removes trailing \n from postcode line and copies string into new malloc'd pointer. */
@@ -157,7 +165,7 @@ char* strtolower(char *str)
 	char* p;
 	p = str;
 	while ( *p ) {
-	       	*p = tolower(*p);
+	       	*p = (char) tolower((int) *p);
 		p++;
 	}
 	return str;
