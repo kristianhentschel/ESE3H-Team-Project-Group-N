@@ -141,20 +141,28 @@ char* surname_get(char *name)
 	}
 }
 
-/* removes trailing \n from postcode line and copies string into new malloc'd pointer. */
+/* removes trailing \n and non-alphanumeric characters from postcode line
+   and copies string into new malloc'd pointer. */
 char* postcode_get(char *postcode)
 {
+	char buf[ADDRESS_BUFFER];
 	char *result;
-	int len;
+	int c, n, len;
 
-	for (len = 0; postcode[len] != '\n'; len++)
-		;
+	n = len = 0;
 
-	result = malloc(len+1);
-	result = strncpy(result, postcode, len);
-	result[len] = '\0';
-	
-	return result;
+	while ((c = postcode[n++]) != '\n' && n < ADDRESS_BUFFER - 1) {
+		if( isalnum(c) )
+			buf[len++] = c;
+	}
+	buf[len++] = '\0';
+
+	result = malloc(len);
+	if(!result)
+		/* malloc failure */
+		return NULL;
+
+	return strcpy(result, buf);
 }   
 
 /* converts a string to lower case in place. */
@@ -163,7 +171,7 @@ char* strtolower(char *str)
 	char* p;
 	p = str;
 	while ( *p ) {
-	       	*p = (char) tolower((int) *p);
+		*p = (char) tolower((int) *p);
 		p++;
 	}
 	return str;
