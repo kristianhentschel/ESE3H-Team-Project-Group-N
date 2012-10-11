@@ -15,6 +15,8 @@ static char* surname_get(char *name);
 static char* postcode_get(char *name);
 static char* strtolower(char *str);
 
+extern int ml_verbose;
+
 /* me_get returns the next file entry, or NULL if end of file*/
 MEntry *me_get(FILE *fd)
 {
@@ -61,7 +63,13 @@ MEntry *me_get(FILE *fd)
 	e->full_address = (char *) malloc(n);
 	strcpy(e->full_address, address);
 
-	return e;
+	if (e->full_address == NULL || e->surname == NULL || e->postcode == NULL) {
+		if(ml_verbose) fprintf(stderr, "invalid address?\n");
+		me_destroy(e);
+		return NULL;
+	} else {
+		return e;
+	}
 }
 
 /* me_hash computes a hash of the MEntry, mod size */
@@ -103,7 +111,7 @@ int me_compare(MEntry *me1, MEntry *me2)
 	result = strcmp(me1->surname, me2->surname);
 	
 	if (result == 0)
-		result = (me1->house_number == me2->house_number);
+		result = (me1->house_number != me2->house_number);
 
 	if (result == 0)
 		result = strcmp(me1->postcode, me2->postcode);
@@ -130,7 +138,7 @@ void me_destroy(MEntry *me)
 char* surname_get(char *name)
 {
 	int c, len; //TODO c should be a char
-	char *start, *result;
+	char *result, *start;
 
 	enum {OUT, IN} state;
 
