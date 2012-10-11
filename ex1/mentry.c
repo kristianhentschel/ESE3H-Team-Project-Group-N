@@ -37,7 +37,7 @@ MEntry *me_get(FILE *fd)
 	line = address;
 
 	/* get characters of current address block, up to and including trailing \n */
-	while ((c = fgetc(fd)) != EOF && n < (ADDRESS_BUFFER - 1) && state != DONE) {
+	while ( state != DONE && n < (ADDRESS_BUFFER - 1) && (c = fgetc(fd)) != EOF ) {
 		address[n++] = c;
 		if (c == '\n') {
 			address[n] = '\0';
@@ -58,16 +58,20 @@ MEntry *me_get(FILE *fd)
 			state++;
 		}
 	}
-	address[n] = '\0';
+
+	if (c == EOF)
+		return NULL;
+
+	address[n++] = '\0';
 
 	e->full_address = (char *) malloc(n);
-	strcpy(e->full_address, address);
 
 	if (e->full_address == NULL || e->surname == NULL || e->postcode == NULL) {
-		if(ml_verbose) fprintf(stderr, "invalid address?\n");
+		if(ml_verbose) fprintf(stderr, "me_get: returning NULL\n");
 		me_destroy(e);
 		return NULL;
 	} else {
+		strcpy(e->full_address, address);
 		return e;
 	}
 }
@@ -96,9 +100,11 @@ unsigned long me_hash(MEntry *me, unsigned long size)
 /* me_print prints the full address on fd */
 void me_print(MEntry *me, FILE *fd)
 {
-	char *c = me->full_address;
+	
+	fprintf(fd, "%s", me->full_address);
+	/*char *c = me->full_address;
 	while (*(c++) != '\0')
-		fputc(*c, fd);
+		fputc(*c, fd);*/
 }
 
 /* me_compare compares two mail entries, returning <0, 0, >0 if
@@ -109,6 +115,8 @@ int me_compare(MEntry *me1, MEntry *me2)
 	/* TODO: what is the order for these? */
 	int result;
 	result = strcmp(me1->surname, me2->surname);
+	
+	//fprintf(stderr, "0x%x\n", me1->surname[0]);
 	
 	if (result == 0)
 		result = (me1->house_number != me2->house_number);
@@ -132,90 +140,26 @@ void me_destroy(MEntry *me)
 
 /* extracts the surname (first alphabetic token) from given string and returns
  * malloc'd char pointer to surname.
- * TODO use buffer array rather than pointer magic?
- * this function works according to the format of sample input files.
+ * FIXME this function works according to the format of sample input files.
  */
 char* surname_get(char *name)
 {
-	int c, len; //TODO c should be a char
-	char *result, *start;
+	char buf[ADDRESS_BUFFER];
+	char *result;
+	int c, n, len;
 
-	enum {OUT, IN} state;
+	n = len = 0;
 
-	start = name;
-	len = 0;
-	state = OUT;
+	while ( isalpha(c = name[n++]) && n < ADDRESS_BUFFER - 1 )
+		buf[len++] = c;
+	
+	buf[len++] = '\0';
 
-	while ((c = *(name++)) != '\n') {
-		if (isalpha(c)) {
-			if( state == OUT ) {
-				state = IN;
-				start = name - 1;
-				len = 0;
-			}
-			len++;
-		} else {
-			if(state == IN)
-				break;
-			state = OUT;
-		}
-	}
-
-	/* len + 1 for name and terminating \0 */
-	result = (char*) malloc(len + 1);
-
-	if (!result) {
+	result = (char *) malloc(len);
+	if (!result)
 		return NULL;
-	} else {
-		/* copy len characters and set terminating \0 */
-		result = strncpy(result, start, len);
-		*(result+len) = '\0';
 
-		return result;
-	}
-}
-
-/* extracts the surname (last alphabetic token) from given string and returns
- * malloc'd char pointer to surname.
- * TODO use buffer array rather than pointer magic?
- * this function works according to the exercise spec.
- */
-char* surname_get_spec(char *name)
-{
-	int c, len; //TODO c should be a char
-	char *start, *result;
-
-	enum {OUT, IN} state;
-
-	start = name;
-	len = 0;
-	state = OUT;
-
-	while ((c = *(name++)) != '\n') {
-		if (isalpha(c)) {
-			if( state == OUT ) {
-				state = IN;
-				start = name - 1;
-				len = 0;
-			}
-			len++;
-		} else {
-			state = OUT;
-		}
-	}
-
-	/* len + 1 for name and terminating \0 */
-	result = (char*) malloc(len + 1);
-
-	if (!result) {
-		return NULL;
-	} else {
-		/* copy len characters and set terminating \0 */
-		result = strncpy(result, start, len);
-		*(result+len) = '\0';
-
-		return result;
-	}
+	return strcpy(result, buf);
 }
 
 /* removes trailing \n and non-alphanumeric characters from postcode line
@@ -232,11 +176,11 @@ char* postcode_get(char *postcode)
 		if( isalnum(c) )
 			buf[len++] = c;
 	}
+
 	buf[len++] = '\0';
 
-	result = malloc(len);
+	result = (char *) malloc(len);
 	if(!result)
-		/* malloc failure */
 		return NULL;
 
 	return strcpy(result, buf);
