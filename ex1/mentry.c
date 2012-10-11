@@ -122,11 +122,57 @@ void me_destroy(MEntry *me)
 	free(me);	
 }
 
+/* extracts the surname (first alphabetic token) from given string and returns
+ * malloc'd char pointer to surname.
+ * TODO use buffer array rather than pointer magic?
+ * this function works according to the format of sample input files.
+ */
+char* surname_get(char *name)
+{
+	int c, len; //TODO c should be a char
+	char *start, *result;
+
+	enum {OUT, IN} state;
+
+	start = name;
+	len = 0;
+	state = OUT;
+
+	while ((c = *(name++)) != '\n') {
+		if (isalpha(c)) {
+			if( state == OUT ) {
+				state = IN;
+				start = name - 1;
+				len = 0;
+			}
+			len++;
+		} else {
+			if(state == IN)
+				break;
+			state = OUT;
+		}
+	}
+
+	/* len + 1 for name and terminating \0 */
+	result = (char*) malloc(len + 1);
+
+	if (!result) {
+		return NULL;
+	} else {
+		/* copy len characters and set terminating \0 */
+		result = strncpy(result, start, len);
+		*(result+len) = '\0';
+
+		return result;
+	}
+}
+
 /* extracts the surname (last alphabetic token) from given string and returns
  * malloc'd char pointer to surname.
  * TODO use buffer array rather than pointer magic?
+ * this function works according to the exercise spec.
  */
-char* surname_get(char *name)
+char* surname_get_spec(char *name)
 {
 	int c, len; //TODO c should be a char
 	char *start, *result;
