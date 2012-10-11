@@ -84,8 +84,17 @@ void me_print(MEntry *me, FILE *fd)
  */
 int me_compare(MEntry *me1, MEntry *me2)
 {
-	/* TODO */
-	return 0;
+	/* TODO: what is the order for these? */
+	int result;
+	result = strcmp(me1->surname, me2->surname);
+	
+	if (result == 0)
+		result = (me1->house_number == me2->house_number);
+
+	if (result == 0)
+		result = strcmp(me1->postcode, me2->postcode);
+
+	return result;
 }
 
 /* me_destroy destroys the mail entry
