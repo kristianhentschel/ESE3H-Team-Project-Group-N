@@ -67,8 +67,22 @@ MEntry *me_get(FILE *fd)
 /* me_hash computes a hash of the MEntry, mod size */
 unsigned long me_hash(MEntry *me, unsigned long size)
 {
-	/* TODO */
-	return 0UL;
+	/* TODO build a proper hash function, check if rest of address is relevant */
+	unsigned long hash;
+	char *s;
+   
+	s = me->surname;
+
+	while (s != '\0')
+		hash += *(s++) + 31 * hash;
+
+	hash += me->house_number + 31*hash; 
+
+	s = me->postcode;
+	while (s != '\0')
+		hash += *(s++) + 31 * hash;
+
+	return hash % size;
 }
 
 /* me_print prints the full address on fd */
