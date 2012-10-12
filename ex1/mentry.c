@@ -59,8 +59,10 @@ MEntry *me_get(FILE *fd)
 		}
 	}
 
-	if (c == EOF)
+	if (c == EOF){
+		me_destroy(e);
 		return NULL;
+	}
 
 	address[n++] = '\0';
 

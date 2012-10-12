@@ -135,6 +135,7 @@ void ml_destroy(MList *ml)
 	for (i = 0; i < ml->size; i++)
 		mlistnode_destroy(ml->buckets[i]);
 
+	free(ml->buckets);
 	free(ml);
 }
 
