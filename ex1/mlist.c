@@ -91,8 +91,8 @@ int ml_add(MList **ml, MEntry *me)
 		(*ml)->buckets[hash] = p; 
 		p->next = NULL;
 	} else {
-		tail->next = p;		
 		p->next = tail->next;
+		tail->next = p;		
 	}
 	return 1;
 }

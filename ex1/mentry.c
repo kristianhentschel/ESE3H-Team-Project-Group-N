@@ -114,6 +114,9 @@ void me_print(MEntry *me, FILE *fd)
  */
 int me_compare(MEntry *me1, MEntry *me2)
 {
+	static unsigned long count = 0;
+	count++;
+
 	/* TODO: what is the order for these? */
 	int result;
 	result = strcmp(me1->surname, me2->surname);
@@ -126,8 +129,7 @@ int me_compare(MEntry *me1, MEntry *me2)
 	if (result == 0)
 		result = strcmp(me1->postcode, me2->postcode);
 
-
-	if(ml_verbose) fprintf(stderr, "me_compare: %s, %s: %d\n", me1->surname, me2->surname, result);
+	if(ml_verbose) fprintf(stderr, "%ld\n", count);
 
 	return result;
 }
