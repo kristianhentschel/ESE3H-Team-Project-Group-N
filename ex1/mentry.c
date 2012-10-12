@@ -81,7 +81,7 @@ MEntry *me_get(FILE *fd)
 /* me_hash computes a hash of the MEntry, mod size */
 unsigned long me_hash(MEntry *me, unsigned long size)
 {
-	/* TODO build a proper hash function, check if rest of address is relevant */
+	/* TODO build a proper hash function. this is based on K&R book example. */
 	unsigned long hash;
 	char *s;
    
@@ -116,10 +116,11 @@ void me_print(MEntry *me, FILE *fd)
  */
 int me_compare(MEntry *me1, MEntry *me2)
 {
+	/*
 	static unsigned long count = 0;
 	count++;
+	*/
 
-	/* TODO: what is the order for these? */
 	int result;
 	result = strcmp(me1->surname, me2->surname);
 	
@@ -140,7 +141,6 @@ int me_compare(MEntry *me1, MEntry *me2)
  */
 void me_destroy(MEntry *me)
 {
-	/* TODO test with valgrind */
 	free(me->surname);
 	free(me->postcode);
 	free(me->full_address);
