@@ -70,6 +70,9 @@ int ml_add(MList **ml, MEntry *me)
 	if (p == NULL)
 		return 0;
 
+	if ((*ml)->buckets[hash] == NULL)
+		(*ml)->buckets[hash] = p; 
+
 	p->next = NULL;
 	p->entry = me;
 
