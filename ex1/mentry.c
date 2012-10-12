@@ -83,6 +83,8 @@ unsigned long me_hash(MEntry *me, unsigned long size)
 	unsigned long hash;
 	char *s;
    
+	hash = 0;
+
 	s = me->surname;
 
 	while (*s != '\0')
@@ -123,6 +125,9 @@ int me_compare(MEntry *me1, MEntry *me2)
 
 	if (result == 0)
 		result = strcmp(me1->postcode, me2->postcode);
+
+
+	if(ml_verbose) fprintf(stderr, "me_compare: %s, %s: %d\n", me1->surname, me2->surname, result);
 
 	return result;
 }

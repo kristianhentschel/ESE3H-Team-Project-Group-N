@@ -55,39 +55,74 @@ MList *ml_create(void)
  */
 int ml_add(MList **ml, MEntry *me)
 {
-	unsigned long hash = me_hash(me, (*ml)->size);
+	unsigned long hash;
+	int cmp;   
 	MListNode *p, *tail;
 	
+	hash = me_hash(me, (*ml)->size);
 
-	if(ml_verbose) fprintf(stderr, "ml_add: Entry with surname %s hashed to %d\n", me->surname, hash);
+	if(ml_verbose) fprintf(stderr, "ml_add: Entry with surname %s hashed to %ld\n", me->surname, hash);
 
 	p = (*ml)->buckets[hash];
+	tail = NULL;
+
 	while( p != NULL ){
+		cmp = me_compare(me, p->entry);
+
 		tail = p;
 		p = p->next;
+		
+		if (cmp == 0)
+			/* duplicate */
+			return 1;
+		else if (cmp > 0)
+			/* me > p->entry, insert before node p */
+			break;
 	}
+
 	p = malloc(sizeof(MListNode));
 	if (p == NULL)
+		/* malloc error */
 		return 0;
 
-	if ((*ml)->buckets[hash] == NULL)
-		(*ml)->buckets[hash] = p; 
-
-	p->next = NULL;
 	p->entry = me;
 
-	tail->next = p;
-
+	if (tail == NULL) {
+		(*ml)->buckets[hash] = p; 
+		p->next = NULL;
+	} else {
+		tail->next = p;		
+		p->next = tail->next;
+	}
 	return 1;
-
-	/* TODO check for duplicate and don't add. */
 }
 
 
 /* ml_lookup - looks for MEntry in the list, returns matching entry or NULL */
 MEntry *ml_lookup(MList *ml, MEntry *me)
 {
-	/* TODO */
+	unsigned long hash;
+	int cmp;
+	MListNode *p;
+
+	hash = me_hash(me, ml->size);
+
+	if(ml_verbose) fprintf(stderr, "ml_lookup: Entry with surname %s hashed to %ld\n", me->surname, hash);
+
+	p = ml->buckets[hash];
+
+	while( p != NULL ){
+		cmp = me_compare(me, p->entry);
+
+		if (cmp == 0)
+			/* duplicate found */
+			return p->entry;
+		else if (cmp > 0)
+			/* passed position of potential duplicates */
+			return NULL;
+		
+		p = p->next;
+	}
 	return NULL;
 }
 
@@ -103,7 +138,7 @@ void ml_destroy(MList *ml)
 	free(ml);
 }
 
-/* frees entry, its value, and all following nodes in the linked list. */
+/* frees node container, its entry, and all following nodes in the linked list. */
 void mlistnode_destroy(MListNode *m)
 {
 	if (m == NULL)
