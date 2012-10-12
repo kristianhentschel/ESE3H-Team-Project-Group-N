@@ -8,6 +8,7 @@ CFLAGS = -W -Wall -ggdb
 all: finddupl findduplLL
 
 finddupl: finddupl.o mlist.o mentry.o
+	$(CC) $(CFLAGS) -o finddupl finddupl.o mlist.o mentry.o
 
 findduplLL: finddupl.o mlistLL.o mentry.o
 	$(CC) $(CFLAGS) -o findduplLL finddupl.o mlistLL.o mentry.o
