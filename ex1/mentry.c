@@ -85,14 +85,14 @@ unsigned long me_hash(MEntry *me, unsigned long size)
    
 	s = me->surname;
 
-	while (s != '\0')
-		hash += *(s++) + 31 * hash;
+	while (*s != '\0')
+		hash = *(s++) + 31 * hash;
 
 	hash += me->house_number + 31*hash; 
 
 	s = me->postcode;
-	while (s != '\0')
-		hash += *(s++) + 31 * hash;
+	while (*s != '\0')
+		hash = *(s++) + 31 * hash;
 
 	return hash % size;
 }
