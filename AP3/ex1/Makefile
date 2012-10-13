@@ -5,13 +5,13 @@
 CC = gcc
 CFLAGS = -W -Wall -ggdb
 
-all: finddupl findduplLL
+all: finddupl findduplLL findduplRS
 
 finddupl: finddupl.o mlist.o mentry.o
 	$(CC) $(CFLAGS) -o finddupl finddupl.o mlist.o mentry.o
 
 findduplRS: finddupl.o mlistRS.o mentry.o
-	$(CC) $(CFLAGS) -o finddupl finddupl.o mlistRS.o mentry.o
+	$(CC) $(CFLAGS) -o findduplRS finddupl.o mlistRS.o mentry.o
 
 findduplLL: finddupl.o mlistLL.o mentry.o
 	$(CC) $(CFLAGS) -o findduplLL finddupl.o mlistLL.o mentry.o
@@ -31,4 +31,4 @@ drive_mentry: drive_mentry.o mentry.o
 drive_mentry.o: mentry.h mentry.c
 
 clean:
-	rm -f *.o finddupl findduplLL
+	rm -f *.o finddupl findduplLL findduplRS drive_mentry 

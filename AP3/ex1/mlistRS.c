@@ -17,14 +17,22 @@ typedef struct mlistnode {
 	struct mlistnode *next;
 } MListNode;
 
+typedef struct mlistbucket {
+	MListNode *head;
+	int size;
+} MListBucket;
+
 struct mlist {
-	 struct mlistnode **buckets;
-	 int size;
+	struct mlistbucket **buckets;
+	int size;
 };
 
 static void mlistnode_destroy(MListNode *m);
 
-/* ml_create - created a new mailing list */
+static MListBucket *mlistbucket_create(void);
+static void mlistbucket_destroy(MListBucket *b);
+
+/* ml_create - creates a new mailing list */
 MList *ml_create(void)
 {
 	MList *p;
@@ -34,19 +42,16 @@ MList *ml_create(void)
 	if(p == NULL)
 		return NULL;
 	
-	/* TODO provision for resizing, static implementation follows. */
-	
 	p->size = INITIAL_SIZE;
 	
-	p->buckets = malloc(p->size * sizeof(MListNode *));
+	p->buckets = malloc(p->size * sizeof(MListBucket *));
 	for(i = 0; i < p->size; i++){
-		p->buckets[i] = NULL;
+		/* TODO handle malloc failure (_create returns NULL) */
+		p->buckets[i] = mlistbucket_create();
 	}
 
 	return p;
 }
-
-
 
 /* ml_add - adds a new MEntry to the list;
  * returns 1 if successful, 0 if error (malloc)
@@ -58,12 +63,14 @@ int ml_add(MList **ml, MEntry *me)
 	unsigned long hash;
 	int cmp;   
 	MListNode *p, *tail;
-	
+	MListBucket *bucket;
+
 	hash = me_hash(me, (*ml)->size);
 
 	if(ml_verbose) fprintf(stderr, "ml_add: Entry with surname %s hashed to %ld\n", me->surname, hash);
 
-	p = (*ml)->buckets[hash];
+	bucket = (*ml)->buckets[hash];
+	p = (*ml)->buckets[hash]->head;
 	tail = NULL;
 
 	while( p != NULL ){
@@ -88,15 +95,18 @@ int ml_add(MList **ml, MEntry *me)
 	p->entry = me;
 
 	if (tail == NULL) {
-		(*ml)->buckets[hash] = p; 
+		bucket->head = p; 
 		p->next = NULL;
 	} else {
 		p->next = tail->next;
 		tail->next = p;		
 	}
+	
+	bucket->size++;
+	if(ml_verbose) fprintf(stderr, "bucket %d size is %d after add.\n", hash, bucket->size);
+	/* TODO: if(size > MAX_BUCKET_SIZE) ml_resize(ml); */
 	return 1;
 }
-
 
 /* ml_lookup - looks for MEntry in the list, returns matching entry or NULL */
 MEntry *ml_lookup(MList *ml, MEntry *me)
@@ -109,7 +119,7 @@ MEntry *ml_lookup(MList *ml, MEntry *me)
 
 	if(ml_verbose) fprintf(stderr, "ml_lookup: Entry with surname %s hashed to %ld\n", me->surname, hash);
 
-	p = ml->buckets[hash];
+	p = ml->buckets[hash]->head;
 
 	while( p != NULL ){
 		cmp = me_compare(me, p->entry);
@@ -129,19 +139,42 @@ MEntry *ml_lookup(MList *ml, MEntry *me)
 /* ml_destroy - destroy the mailing list */
 void ml_destroy(MList *ml)
 {
-	/* TODO */
+	if(ml_verbose) fprintf(stderr, "ml_destroy\n");
+
 	int i;
 
 	for (i = 0; i < ml->size; i++)
-		mlistnode_destroy(ml->buckets[i]);
+		mlistbucket_destroy(ml->buckets[i]);
 
 	free(ml->buckets);
 	free(ml);
 }
 
+/* creates and initialises and empty bucket */
+MListBucket *mlistbucket_create() {
+	MListBucket *b;
+
+	b = malloc(sizeof(MListBucket));
+	if(b == NULL)
+		return NULL;
+
+	b->size = 0;
+	b->head = NULL;
+
+	return b;
+}
+
+/* frees bucket and all its node entries. */
+void mlistbucket_destroy(MListBucket *b)
+{
+	if(ml_verbose) fprintf(stderr, "mlistbucket_destroy\n");
+	mlistnode_destroy(b->head);
+	free(b);
+}
 /* frees node container, its entry, and all following nodes in the linked list. */
 void mlistnode_destroy(MListNode *m)
 {
+	if(ml_verbose) fprintf(stderr, "mlistnode_destroy\n");
 	if (m == NULL)
 		return;
 
