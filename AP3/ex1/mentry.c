@@ -119,6 +119,7 @@ int me_compare(MEntry *me1, MEntry *me2)
 	/*
 	static unsigned long count = 0;
 	count++;
+	if(ml_verbose) fprintf(stderr, "%ld\n", count);
 	*/
 
 	int result;
@@ -131,8 +132,6 @@ int me_compare(MEntry *me1, MEntry *me2)
 
 	if (result == 0)
 		result = strcmp(me1->postcode, me2->postcode);
-
-	if(ml_verbose) fprintf(stderr, "%ld\n", count);
 
 	return result;
 }
