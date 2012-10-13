@@ -10,6 +10,9 @@ all: finddupl findduplLL
 finddupl: finddupl.o mlist.o mentry.o
 	$(CC) $(CFLAGS) -o finddupl finddupl.o mlist.o mentry.o
 
+findduplRS: finddupl.o mlistRS.o mentry.o
+	$(CC) $(CFLAGS) -o finddupl finddupl.o mlistRS.o mentry.o
+
 findduplLL: finddupl.o mlistLL.o mentry.o
 	$(CC) $(CFLAGS) -o findduplLL finddupl.o mlistLL.o mentry.o
 
@@ -20,6 +23,8 @@ mentry.o: mentry.c mentry.h
 mlist.o: mlist.c mlist.h mentry.h
 
 mlistLL.o: mlistLL.c mlist.h mentry.h
+
+mlistRS.o: mlistRS.c mlist.h mentry.h
 
 drive_mentry: drive_mentry.o mentry.o
 
