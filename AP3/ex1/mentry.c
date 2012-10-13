@@ -140,6 +140,9 @@ int me_compare(MEntry *me1, MEntry *me2)
  */
 void me_destroy(MEntry *me)
 {
+	if(me == NULL)
+		return;
+
 	free(me->surname);
 	free(me->postcode);
 	free(me->full_address);
