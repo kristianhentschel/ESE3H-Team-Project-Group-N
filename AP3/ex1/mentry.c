@@ -8,6 +8,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "mentry.h"
+#include <stdint.h>
 
 #define ADDRESS_BUFFER 1024
 
@@ -86,7 +87,7 @@ MEntry *me_get(FILE *fd)
 unsigned long me_hash(MEntry *me, unsigned long size)
 {
 	/* TODO build a proper hash function. this is based on K&R book example. */
-	unsigned long hash;
+	uint32_t  hash;
 	char *s;
    
 	hash = 0;
