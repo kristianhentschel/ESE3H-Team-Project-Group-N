@@ -32,6 +32,11 @@ MEntry *me_get(FILE *fd)
 		return NULL; 
 	}
 
+	e->surname = NULL;
+	e->house_number = 0;
+	e->postcode = NULL;
+	e->full_address = NULL;
+
 	state = NAME;
 	n = 0;
 	line = address;
@@ -69,7 +74,6 @@ MEntry *me_get(FILE *fd)
 	e->full_address = (char *) malloc(n);
 
 	if (e->full_address == NULL || e->surname == NULL || e->postcode == NULL) {
-		if(ml_verbose) fprintf(stderr, "me_get: returning NULL\n");
 		me_destroy(e);
 		return NULL;
 	} else {
@@ -104,11 +108,7 @@ unsigned long me_hash(MEntry *me, unsigned long size)
 /* me_print prints the full address on fd */
 void me_print(MEntry *me, FILE *fd)
 {
-	
 	fprintf(fd, "%s", me->full_address);
-	/*char *c = me->full_address;
-	while (*(c++) != '\0')
-		fputc(*c, fd);*/
 }
 
 /* me_compare compares two mail entries, returning <0, 0, >0 if
@@ -158,7 +158,7 @@ char* surname_get(char *name)
 
 	n = len = 0;
 
-	while ( isalpha(c = name[n++]) && n < ADDRESS_BUFFER - 1 )
+	while (isalpha(c = name[n++]) && n < ADDRESS_BUFFER - 1 )
 		buf[len++] = c;
 	
 	buf[len++] = '\0';
