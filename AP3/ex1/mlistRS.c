@@ -8,7 +8,7 @@
 #include "mlist.h"
 
 #define INITIAL_SIZE 10
-#define MAX_BUCKET_SIZE 4
+#define MAX_BUCKET_SIZE 2
 
 int ml_verbose=0;		/* if true, print diagnostics on stderr */
 
@@ -27,13 +27,21 @@ struct mlist {
 	int size;
 };
 
+static MList *ml_create2(int n);
+static void ml_resize(MList **ml);
+
 static void mlistnode_destroy(MListNode *m);
 
 static MListBucket *mlistbucket_create(void);
 static void mlistbucket_destroy(MListBucket *b);
 
-/* ml_create - creates a new mailing list */
-MList *ml_create(void)
+/* ml_create - creates a mailing list of defined original size */
+MList *ml_create(void){
+	return ml_create2(INITIAL_SIZE);
+}
+
+/* ml_create - creates a new mailing list of given size */
+static MList *ml_create2(int n)
 {
 	MList *p;
 	int i;
@@ -42,7 +50,7 @@ MList *ml_create(void)
 	if(p == NULL)
 		return NULL;
 	
-	p->size = INITIAL_SIZE;
+	p->size = n;
 	
 	p->buckets = malloc(p->size * sizeof(MListBucket *));
 	for(i = 0; i < p->size; i++){
@@ -104,7 +112,10 @@ int ml_add(MList **ml, MEntry *me)
 	
 	bucket->size++;
 	if(ml_verbose) fprintf(stderr, "bucket %d size is %d after add.\n", hash, bucket->size);
-	/* TODO: if(size > MAX_BUCKET_SIZE) ml_resize(ml); */
+	
+	if(bucket->size > MAX_BUCKET_SIZE)
+		ml_resize(ml);
+
 	return 1;
 }
 
@@ -123,6 +134,7 @@ MEntry *ml_lookup(MList *ml, MEntry *me)
 
 	while( p != NULL ){
 		cmp = me_compare(me, p->entry);
+		if(ml_verbose) fprintf(stderr, "compared to %s: %d\n", p->entry->surname, cmp);
 
 		if (cmp == 0)
 			/* duplicate found */
@@ -148,6 +160,32 @@ void ml_destroy(MList *ml)
 
 	free(ml->buckets);
 	free(ml);
+}
+
+/* ml_resize resizes the mailing list, doubling the number of containers. */
+void ml_resize(MList **ml){
+	MList *oldml, *newml;
+	int i;
+	MListNode *p;
+
+	oldml = *ml;
+	newml = ml_create2(2 * oldml->size);
+	
+	if (ml_verbose) fprintf(stderr, "Resizing mailing list from %d to %d buckets.\n", oldml->size, newml->size);
+	/* TODO more statistics on bucket sizes would be nice. */
+
+	for (i = 0; i < oldml->size; i++) {
+		p = oldml->buckets[i]->head;
+		while (p != NULL){
+			ml_add(&newml, p->entry);
+			p->entry = NULL;
+			p = p->next;
+		}
+	}
+
+	/* done, swap lists and delete original (now empty) table */
+	ml_destroy(oldml);
+	*ml = newml;
 }
 
 /* creates and initialises and empty bucket */
