@@ -113,11 +113,12 @@ MEntry *ml_lookup(MList *ml, MEntry *me)
 
 	while( p != NULL ){
 		cmp = me_compare(me, p->entry);
+		if(ml_verbose) fprintf(stderr, "compared to %s: %d\n", p->entry->surname, cmp);
 
 		if (cmp == 0)
 			/* duplicate found */
 			return p->entry;
-		else if (cmp > 0)
+		else if (cmp < 0)
 			/* passed position of potential duplicates */
 			return NULL;
 		

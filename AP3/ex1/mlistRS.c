@@ -8,7 +8,7 @@
 #include "mlist.h"
 
 #define INITIAL_SIZE 10
-#define MAX_BUCKET_SIZE 2
+#define MAX_BUCKET_SIZE 10
 
 int ml_verbose=0;		/* if true, print diagnostics on stderr */
 
@@ -139,7 +139,7 @@ MEntry *ml_lookup(MList *ml, MEntry *me)
 		if (cmp == 0)
 			/* duplicate found */
 			return p->entry;
-		else if (cmp > 0)
+		else if (cmp < 0)
 			/* passed position of potential duplicates */
 			return NULL;
 		
