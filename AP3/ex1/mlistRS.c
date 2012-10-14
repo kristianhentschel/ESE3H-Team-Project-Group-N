@@ -83,16 +83,16 @@ int ml_add(MList **ml, MEntry *me)
 
 	while( p != NULL ){
 		cmp = me_compare(me, p->entry);
-
-		tail = p;
-		p = p->next;
 		
 		if (cmp == 0)
 			/* duplicate */
 			return 1;
-		else if (cmp > 0)
+		else if (cmp < 0)
 			/* me > p->entry, insert before node p */
 			break;
+	
+		tail = p;
+		p = p->next;
 	}
 
 	p = malloc(sizeof(MListNode));
@@ -103,15 +103,16 @@ int ml_add(MList **ml, MEntry *me)
 	p->entry = me;
 
 	if (tail == NULL) {
-		bucket->head = p; 
-		p->next = NULL;
+		tail = bucket->head;
+		bucket->head = p;
+		p->next = tail;
 	} else {
 		p->next = tail->next;
 		tail->next = p;		
 	}
 	
 	bucket->size++;
-	if(ml_verbose) fprintf(stderr, "bucket %d size is %d after add.\n", hash, bucket->size);
+	if(ml_verbose) fprintf(stderr, "bucket %ld size is %ld after add.\n", hash, bucket->size);
 	
 	if(bucket->size > MAX_BUCKET_SIZE)
 		ml_resize(ml);
