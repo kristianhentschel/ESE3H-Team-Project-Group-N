@@ -129,7 +129,7 @@ int me_compare(MEntry *me1, MEntry *me2)
 	//fprintf(stderr, "0x%x\n", me1->surname[0]);
 	
 	if (result == 0)
-		result = (me1->house_number != me2->house_number);
+		result = (me1->house_number - me2->house_number);
 
 	if (result == 0)
 		result = strcmp(me1->postcode, me2->postcode);
