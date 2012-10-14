@@ -8,7 +8,6 @@
 #include "mlist.h"
 
 #define INITIAL_SIZE 10
-#define MAX_BUCKET_SIZE 4
 
 int ml_verbose=0;		/* if true, print diagnostics on stderr */
 

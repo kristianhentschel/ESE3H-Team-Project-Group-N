@@ -87,7 +87,7 @@ MEntry *me_get(FILE *fd)
 unsigned long me_hash(MEntry *me, unsigned long size)
 {
 	/* TODO build a proper hash function. this is based on K&R book example. */
-	uint32_t  hash;
+	unsigned long hash;
 	char *s;
    
 	hash = 0;

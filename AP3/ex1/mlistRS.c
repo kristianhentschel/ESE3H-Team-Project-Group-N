@@ -8,7 +8,7 @@
 #include "mlist.h"
 
 #define INITIAL_SIZE 10
-#define MAX_BUCKET_SIZE 10
+#define MAX_BUCKET_SIZE 20
 
 int ml_verbose=0;		/* if true, print diagnostics on stderr */
 
@@ -112,7 +112,7 @@ int ml_add(MList **ml, MEntry *me)
 	}
 	
 	bucket->size++;
-	if(ml_verbose) fprintf(stderr, "bucket %ld size is %ld after add.\n", hash, bucket->size);
+	if(ml_verbose) fprintf(stderr, "bucket %ld size is %d after add.\n", hash, bucket->size);
 	
 	if(bucket->size > MAX_BUCKET_SIZE)
 		ml_resize(ml);
