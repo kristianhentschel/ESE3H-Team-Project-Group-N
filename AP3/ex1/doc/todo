@@ -1,3 +1,4 @@
-* implement mentry.c and mlist.c methods
-* test system
 * write status.tex file
+* make mlistRS implementation main mlist.c file
+* clean up, especially in and around me_get and related string parsing.
+* test on unix lab machines.

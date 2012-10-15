@@ -87,7 +87,7 @@ MEntry *me_get(FILE *fd)
 unsigned long me_hash(MEntry *me, unsigned long size)
 {
 	/* TODO build a proper hash function. this is based on K&R book example. */
-	uint32_t  hash;
+	unsigned long hash;
 	char *s;
    
 	hash = 0;
@@ -129,7 +129,7 @@ int me_compare(MEntry *me1, MEntry *me2)
 	//fprintf(stderr, "0x%x\n", me1->surname[0]);
 	
 	if (result == 0)
-		result = (me1->house_number != me2->house_number);
+		result = (me1->house_number - me2->house_number);
 
 	if (result == 0)
 		result = strcmp(me1->postcode, me2->postcode);
@@ -141,6 +141,9 @@ int me_compare(MEntry *me1, MEntry *me2)
  */
 void me_destroy(MEntry *me)
 {
+	if(me == NULL)
+		return;
+
 	free(me->surname);
 	free(me->postcode);
 	free(me->full_address);

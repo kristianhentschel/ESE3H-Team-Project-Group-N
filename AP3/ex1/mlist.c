@@ -8,7 +8,6 @@
 #include "mlist.h"
 
 #define INITIAL_SIZE 10
-#define MAX_BUCKET_SIZE 4
 
 int ml_verbose=0;		/* if true, print diagnostics on stderr */
 
@@ -61,7 +60,7 @@ int ml_add(MList **ml, MEntry *me)
 	
 	hash = me_hash(me, (*ml)->size);
 
-	if(ml_verbose) fprintf(stderr, "ml_add: Entry with surname %s hashed to %ld\n", me->surname, hash);
+	if(ml_verbose) fprintf(stderr, "ml_add: Entry with surname %s, house %d hashed to %ld\n", me->surname, me->house_number, hash);
 
 	p = (*ml)->buckets[hash];
 	tail = NULL;
@@ -69,15 +68,17 @@ int ml_add(MList **ml, MEntry *me)
 	while( p != NULL ){
 		cmp = me_compare(me, p->entry);
 
-		tail = p;
-		p = p->next;
-		
+		if(ml_verbose) fprintf(stderr, "ml_add compared to %s, %d: %d\n", p->entry->surname, p->entry->house_number, cmp);
+
 		if (cmp == 0)
 			/* duplicate */
 			return 1;
-		else if (cmp > 0)
-			/* me > p->entry, insert before node p */
+		else if (cmp < 0)
+			/* me < p->entry, insert before node p */
 			break;
+		
+		tail = p;
+		p = p->next;
 	}
 
 	p = malloc(sizeof(MListNode));
@@ -88,9 +89,12 @@ int ml_add(MList **ml, MEntry *me)
 	p->entry = me;
 
 	if (tail == NULL) {
-		(*ml)->buckets[hash] = p; 
-		p->next = NULL;
+		if (ml_verbose) fprintf(stderr, "ml_add: Added as head.\n");
+		tail = (*ml)->buckets[hash];
+	   	(*ml)->buckets[hash] = p; 
+		p->next = tail;
 	} else {
+		if (ml_verbose) fprintf(stderr, "ml_add: Added after %s.\n", tail->entry->surname);
 		p->next = tail->next;
 		tail->next = p;		
 	}
@@ -107,17 +111,18 @@ MEntry *ml_lookup(MList *ml, MEntry *me)
 
 	hash = me_hash(me, ml->size);
 
-	if(ml_verbose) fprintf(stderr, "ml_lookup: Entry with surname %s hashed to %ld\n", me->surname, hash);
+	if(ml_verbose) fprintf(stderr, "ml_lookup: Entry with surname %s, house %d hashed to %ld\n", me->surname, me->house_number, hash);
 
 	p = ml->buckets[hash];
 
 	while( p != NULL ){
 		cmp = me_compare(me, p->entry);
+		if(ml_verbose) fprintf(stderr, "ml_lookup: compared to %s, %d: %d\n", p->entry->surname, p->entry->house_number, cmp);
 
-		if (cmp == 0)
+		if (cmp == 0) 
 			/* duplicate found */
 			return p->entry;
-		else if (cmp > 0)
+		else if (cmp < 0)
 			/* passed position of potential duplicates */
 			return NULL;
 		
