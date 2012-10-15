@@ -1,0 +1,11 @@
+#c
+*.o
+*.exe
+
+#vim
+*.swp
+
+#tex
+*.aux
+*.log
+
