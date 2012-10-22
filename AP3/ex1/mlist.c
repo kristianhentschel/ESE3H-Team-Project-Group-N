@@ -66,7 +66,6 @@ static MList *ml_create2(int n)
 /* ml_add - adds a new MEntry to the list;
  * returns 1 if successful, 0 if error (malloc)
  * returns 1 if it is a duplicate
- * TODO check in finddupl.c: should maybe be -1 for duplicate?!
  */
 int ml_add(MList **ml, MEntry *me)
 {
