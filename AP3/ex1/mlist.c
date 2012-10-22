@@ -1,6 +1,8 @@
 /*
  * Author: Kristian Hentschel / 1003734h
- * Advanced Programming 3, Assessed Exercise AX1
+ * AP3 Exercise 1
+ * This is my own work as defined in the Academic Ethics agreement I
+have signed.
  */
 
 #include <stdio.h>
@@ -8,6 +10,7 @@
 #include "mlist.h"
 
 #define INITIAL_SIZE 10
+#define MAX_BUCKET_SIZE 20
 
 int ml_verbose=0;		/* if true, print diagnostics on stderr */
 
@@ -16,15 +19,31 @@ typedef struct mlistnode {
 	struct mlistnode *next;
 } MListNode;
 
+typedef struct mlistbucket {
+	MListNode *head;
+	int size;
+} MListBucket;
+
 struct mlist {
-	 struct mlistnode **buckets;
-	 int size;
+	struct mlistbucket **buckets;
+	int size;
 };
+
+static MList *ml_create2(int n);
+static void ml_resize(MList **ml);
 
 static void mlistnode_destroy(MListNode *m);
 
-/* ml_create - created a new mailing list */
-MList *ml_create(void)
+static MListBucket *mlistbucket_create(void);
+static void mlistbucket_destroy(MListBucket *b);
+
+/* ml_create - creates a mailing list of defined original size */
+MList *ml_create(void){
+	return ml_create2(INITIAL_SIZE);
+}
+
+/* ml_create - creates a new mailing list of given size */
+static MList *ml_create2(int n)
 {
 	MList *p;
 	int i;
@@ -33,19 +52,16 @@ MList *ml_create(void)
 	if(p == NULL)
 		return NULL;
 	
-	/* TODO provision for resizing, static implementation follows. */
+	p->size = n;
 	
-	p->size = INITIAL_SIZE;
-	
-	p->buckets = malloc(p->size * sizeof(MListNode *));
+	p->buckets = malloc(p->size * sizeof(MListBucket *));
 	for(i = 0; i < p->size; i++){
-		p->buckets[i] = NULL;
+		/* TODO handle malloc failure (_create returns NULL) */
+		p->buckets[i] = mlistbucket_create();
 	}
 
 	return p;
 }
-
-
 
 /* ml_add - adds a new MEntry to the list;
  * returns 1 if successful, 0 if error (malloc)
@@ -57,26 +73,26 @@ int ml_add(MList **ml, MEntry *me)
 	unsigned long hash;
 	int cmp;   
 	MListNode *p, *tail;
-	
+	MListBucket *bucket;
+
 	hash = me_hash(me, (*ml)->size);
 
-	if(ml_verbose) fprintf(stderr, "ml_add: Entry with surname %s, house %d hashed to %ld\n", me->surname, me->house_number, hash);
+	if(ml_verbose) fprintf(stderr, "ml_add: Entry with surname %s hashed to %ld\n", me->surname, hash);
 
-	p = (*ml)->buckets[hash];
+	bucket = (*ml)->buckets[hash];
+	p = (*ml)->buckets[hash]->head;
 	tail = NULL;
 
 	while( p != NULL ){
 		cmp = me_compare(me, p->entry);
-
-		if(ml_verbose) fprintf(stderr, "ml_add compared to %s, %d: %d\n", p->entry->surname, p->entry->house_number, cmp);
-
+		
 		if (cmp == 0)
 			/* duplicate */
 			return 1;
 		else if (cmp < 0)
-			/* me < p->entry, insert before node p */
+			/* me > p->entry, insert before node p */
 			break;
-		
+	
 		tail = p;
 		p = p->next;
 	}
@@ -89,18 +105,22 @@ int ml_add(MList **ml, MEntry *me)
 	p->entry = me;
 
 	if (tail == NULL) {
-		if (ml_verbose) fprintf(stderr, "ml_add: Added as head.\n");
-		tail = (*ml)->buckets[hash];
-	   	(*ml)->buckets[hash] = p; 
+		tail = bucket->head;
+		bucket->head = p;
 		p->next = tail;
 	} else {
-		if (ml_verbose) fprintf(stderr, "ml_add: Added after %s.\n", tail->entry->surname);
 		p->next = tail->next;
 		tail->next = p;		
 	}
+	
+	bucket->size++;
+	if(ml_verbose) fprintf(stderr, "bucket %ld size is %d after add.\n", hash, bucket->size);
+	
+	if(bucket->size > MAX_BUCKET_SIZE)
+		ml_resize(ml);
+
 	return 1;
 }
-
 
 /* ml_lookup - looks for MEntry in the list, returns matching entry or NULL */
 MEntry *ml_lookup(MList *ml, MEntry *me)
@@ -111,15 +131,15 @@ MEntry *ml_lookup(MList *ml, MEntry *me)
 
 	hash = me_hash(me, ml->size);
 
-	if(ml_verbose) fprintf(stderr, "ml_lookup: Entry with surname %s, house %d hashed to %ld\n", me->surname, me->house_number, hash);
+	if(ml_verbose) fprintf(stderr, "ml_lookup: Entry with surname %s hashed to %ld\n", me->surname, hash);
 
-	p = ml->buckets[hash];
+	p = ml->buckets[hash]->head;
 
 	while( p != NULL ){
 		cmp = me_compare(me, p->entry);
-		if(ml_verbose) fprintf(stderr, "ml_lookup: compared to %s, %d: %d\n", p->entry->surname, p->entry->house_number, cmp);
+		if(ml_verbose) fprintf(stderr, "compared to %s: %d\n", p->entry->surname, cmp);
 
-		if (cmp == 0) 
+		if (cmp == 0)
 			/* duplicate found */
 			return p->entry;
 		else if (cmp < 0)
@@ -134,19 +154,68 @@ MEntry *ml_lookup(MList *ml, MEntry *me)
 /* ml_destroy - destroy the mailing list */
 void ml_destroy(MList *ml)
 {
-	/* TODO */
+	if(ml_verbose) fprintf(stderr, "ml_destroy\n");
+
 	int i;
 
 	for (i = 0; i < ml->size; i++)
-		mlistnode_destroy(ml->buckets[i]);
+		mlistbucket_destroy(ml->buckets[i]);
 
 	free(ml->buckets);
 	free(ml);
 }
 
+/* ml_resize resizes the mailing list, doubling the number of containers. */
+void ml_resize(MList **ml){
+	MList *oldml, *newml;
+	int i;
+	MListNode *p;
+
+	oldml = *ml;
+	newml = ml_create2(2 * oldml->size);
+	
+	if (ml_verbose) fprintf(stderr, "Resizing mailing list from %d to %d buckets.\n", oldml->size, newml->size);
+	/* TODO more statistics on bucket sizes would be nice. */
+
+	for (i = 0; i < oldml->size; i++) {
+		p = oldml->buckets[i]->head;
+		while (p != NULL){
+			ml_add(&newml, p->entry);
+			p->entry = NULL;
+			p = p->next;
+		}
+	}
+
+	/* done, swap lists and delete original (now empty) table */
+	ml_destroy(oldml);
+	*ml = newml;
+}
+
+/* creates and initialises and empty bucket */
+MListBucket *mlistbucket_create() {
+	MListBucket *b;
+
+	b = malloc(sizeof(MListBucket));
+	if(b == NULL)
+		return NULL;
+
+	b->size = 0;
+	b->head = NULL;
+
+	return b;
+}
+
+/* frees bucket and all its node entries. */
+void mlistbucket_destroy(MListBucket *b)
+{
+	if(ml_verbose) fprintf(stderr, "mlistbucket_destroy\n");
+	mlistnode_destroy(b->head);
+	free(b);
+}
 /* frees node container, its entry, and all following nodes in the linked list. */
 void mlistnode_destroy(MListNode *m)
 {
+	if(ml_verbose) fprintf(stderr, "mlistnode_destroy\n");
 	if (m == NULL)
 		return;
 
