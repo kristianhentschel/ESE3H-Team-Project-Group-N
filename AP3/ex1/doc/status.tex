@@ -10,13 +10,11 @@
 \maketitle
 
 \subsection{Solution Status}
-My solution is a resizing hash table that doubles its size (by moving all entries into a new table) whenever one bucket reaches more than 20 entries. It starts of with 10 buckets. Buckets are implemented as linked lists which are filled in order to minimize lookup time.
+My solution is a resizing hash table that doubles its size (by moving all entries into a new table) whenever one bucket reaches more than 20 entries. It starts of with 10 buckets. Buckets are implemented as linked lists which are filled in order, in order to minimize lookup time.
 
-It works correctly as far as I can test it. (32-bit gcc on Cygwin/Windows and 64-bit gcc on Fedora in Virtual Box. Some testing has been done on sibu, more needs to be done on the lab machines.)
+It works correctly as far as I can test it. (32-bit gcc on Cygwin/Windows and 64-bit gcc on Fedora in Virtual Box, as well as on the Lab machines)
 
 For up to 10,000 randomly generated addresses, my implementation of the re-sizing hash-table gives the same output as the provided Linked List implementation, and my non-resizing implementation. I have not discovered any memory leaks (valgrind). Results and performance seem reasonable for randomly generated input file of 1,000,000 entries.
-
-At the moment, it uses the address format given in the sample input files S.txt and M.txt where the first line begins with the surname. The exercise handout describes the format to have the surname as the last token on the first address line.
 
 \subsection{Makefile}
 I use the following Makefile, as none was provided in the exercise handout.
