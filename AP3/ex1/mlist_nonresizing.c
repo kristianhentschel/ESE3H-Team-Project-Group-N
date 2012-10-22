@@ -1,5 +1,6 @@
 /*
  * Author: Kristian Hentschel / 1003734h
+ * mlist.c, static hash table implementation
  * Advanced Programming 3, Assessed Exercise AX1
  */
 

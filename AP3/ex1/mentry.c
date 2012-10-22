@@ -1,6 +1,6 @@
 /*
  * Author: Kristian Hentschel / 1003734h
- * AP3 Exercise 1
+ * AP3 Exercise 1 - mentry.c
  * This is my own work as defined in the Academic Ethics agreement I
 have signed.
  */
@@ -88,18 +88,17 @@ MEntry *me_get(FILE *fd)
 /* me_hash computes a hash of the MEntry, mod size */
 unsigned long me_hash(MEntry *me, unsigned long size)
 {
-	/* TODO build a proper hash function. this is based on K&R book example. */
+	/* this hashing algorithm is based on the example in K&R. */
 	unsigned long hash;
 	char *s;
    
 	hash = 0;
 
 	s = me->surname;
-
 	while (*s != '\0')
 		hash = *(s++) + 31 * hash;
 
-	hash += me->house_number + 31*hash; 
+	hash += me->house_number + 31 * hash; 
 
 	s = me->postcode;
 	while (*s != '\0')
@@ -128,8 +127,6 @@ int me_compare(MEntry *me1, MEntry *me2)
 	int result;
 	result = strcmp(me1->surname, me2->surname);
 	
-	//fprintf(stderr, "0x%x\n", me1->surname[0]);
-	
 	if (result == 0)
 		result = (me1->house_number - me2->house_number);
 
@@ -152,9 +149,8 @@ void me_destroy(MEntry *me)
 	free(me);	
 }
 
-/* extracts the surname (first alphabetic token) from given string and returns
+/* extracts the surname (first alphabetic token) from line and returns
  * malloc'd char pointer to surname.
- * FIXME this function works according to the format of sample input files.
  */
 char* surname_get(char *name)
 {
@@ -176,8 +172,8 @@ char* surname_get(char *name)
 	return strcpy(result, buf);
 }
 
-/* removes trailing \n and non-alphanumeric characters from postcode line
-   and copies string into new malloc'd pointer. */
+/* removes all non-alphanumeric characters from postcode line
+   and copies string into new malloc'd char pointer. */
 char* postcode_get(char *postcode)
 {
 	char buf[ADDRESS_BUFFER];

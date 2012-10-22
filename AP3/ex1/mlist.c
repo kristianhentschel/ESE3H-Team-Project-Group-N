@@ -1,6 +1,6 @@
 /*
  * Author: Kristian Hentschel / 1003734h
- * AP3 Exercise 1
+ * AP3 Exercise 1 - mlist.c (resizing hash-table implementation)
  * This is my own work as defined in the Academic Ethics agreement I
 have signed.
  */
