@@ -2,7 +2,7 @@
  * Author: Kristian Hentschel / 1003734h
  * AP3 Exercise 1 - mentry.c
  * This is my own work as defined in the Academic Ethics agreement I
-have signed.
+have signed. me_hash is based on an example in K&R.
  */
 
 #include <stdio.h>

@@ -56,7 +56,6 @@ static MList *ml_create_sized(int n)
 	
 	p->buckets = malloc(p->size * sizeof(MListBucket *));
 	for(i = 0; i < p->size; i++){
-		/* TODO handle malloc failure (_create returns NULL) */
 		p->buckets[i] = mlistbucket_create();
 	}
 
