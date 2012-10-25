@@ -29,7 +29,7 @@ struct mlist {
 	int size;
 };
 
-static MList *ml_create2(int n);
+static MList *ml_create_sized(int n);
 static void ml_resize(MList **ml);
 
 static void mlistnode_destroy(MListNode *m);
@@ -39,11 +39,11 @@ static void mlistbucket_destroy(MListBucket *b);
 
 /* ml_create - creates a mailing list of defined original size */
 MList *ml_create(void){
-	return ml_create2(INITIAL_SIZE);
+	return ml_create_sized(INITIAL_SIZE);
 }
 
-/* ml_create - creates a new mailing list of given size */
-static MList *ml_create2(int n)
+/* ml_create_sized - creates a new mailing list of given size */
+static MList *ml_create_sized(int n)
 {
 	MList *p;
 	int i;
@@ -75,8 +75,6 @@ int ml_add(MList **ml, MEntry *me)
 	MListBucket *bucket;
 
 	hash = me_hash(me, (*ml)->size);
-
-	if(ml_verbose) fprintf(stderr, "ml_add: Entry with surname %s hashed to %ld\n", me->surname, hash);
 
 	bucket = (*ml)->buckets[hash];
 	p = (*ml)->buckets[hash]->head;
@@ -113,7 +111,6 @@ int ml_add(MList **ml, MEntry *me)
 	}
 	
 	bucket->size++;
-	if(ml_verbose) fprintf(stderr, "bucket %ld size is %d after add.\n", hash, bucket->size);
 	
 	if(bucket->size > MAX_BUCKET_SIZE)
 		ml_resize(ml);
@@ -130,13 +127,10 @@ MEntry *ml_lookup(MList *ml, MEntry *me)
 
 	hash = me_hash(me, ml->size);
 
-	if(ml_verbose) fprintf(stderr, "ml_lookup: Entry with surname %s hashed to %ld\n", me->surname, hash);
-
 	p = ml->buckets[hash]->head;
 
 	while( p != NULL ){
 		cmp = me_compare(me, p->entry);
-		if(ml_verbose) fprintf(stderr, "compared to %s: %d\n", p->entry->surname, cmp);
 
 		if (cmp == 0)
 			/* duplicate found */
@@ -171,7 +165,7 @@ void ml_resize(MList **ml){
 	MListNode *p;
 
 	oldml = *ml;
-	newml = ml_create2(2 * oldml->size);
+	newml = ml_create_sized(2 * oldml->size);
 	
 	if (ml_verbose) fprintf(stderr, "Resizing mailing list from %d to %d buckets.\n", oldml->size, newml->size);
 	/* TODO more statistics on bucket sizes would be nice. */
@@ -207,14 +201,12 @@ MListBucket *mlistbucket_create() {
 /* frees bucket and all its node entries. */
 void mlistbucket_destroy(MListBucket *b)
 {
-	if(ml_verbose) fprintf(stderr, "mlistbucket_destroy\n");
 	mlistnode_destroy(b->head);
 	free(b);
 }
 /* frees node container, its entry, and all following nodes in the linked list. */
 void mlistnode_destroy(MListNode *m)
 {
-	if(ml_verbose) fprintf(stderr, "mlistnode_destroy\n");
 	if (m == NULL)
 		return;
 
