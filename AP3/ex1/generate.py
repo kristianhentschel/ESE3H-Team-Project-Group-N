@@ -35,12 +35,13 @@ def generate(n):
         
         #house number (maybe) and street name
         if randint(0, 100) != 0:
-            print randint(1, 100),
-        print randlist(streetnames)
-        
-        #postcode
-        print randlist(postcodes),
+       		print randint(1, 100),
+
+        print randlist(streetnames),
         print randlist(cities)
+        
+	#postcode
+        print randlist(postcodes)
 
 if len(sys.argv) < 2:
     print "Usage:", sys.argv[0], "n"
