@@ -8,37 +8,13 @@
 
 \begin{document}
 \maketitle
-
-\subsection{Solution Status}
+\section{Solution Status}
 My solution is a resizing hash table that doubles its size (by moving all entries into a new table) whenever one bucket reaches more than 20 entries. It starts of with 10 buckets. Buckets are implemented as linked lists which are filled in order, in order to minimize lookup time.
 
-It might be more efficient for the hash table to use a different resizing algorithm, as doubling a big table is rather wasteful in space. The hash function was taken directly from Kernighan & Ritchie, and does not distribute items ideally.
+It might be more efficient for the hash table to use a different resizing algorithm, as doubling a big table is rather wasteful in space. The hash function was taken directly from Kernighan \& Ritchie, and does not distribute items ideally.
 
 It works correctly as far as I can test it. (32-bit gcc on Cygwin/Windows and 64-bit gcc on Fedora in Virtual Box, as well as on the lab machines)
 
 The program works correctly with the given sample input files. For up to 10,000 randomly generated addresses, my implementation of the re-sizing hash-table gives the same output as the provided Linked List implementation, and my non-resizing implementation. I have not discovered any memory leaks (valgrind). Results and performance seem reasonable for randomly generated input files of up to 10,000,000 entries, though I could not check them against the output from other implementations.
-
-\subsection{Makefile}
-I use the following Makefile, as none was provided in the exercise handout.
-
-\begin{lstlisting}
-CC = gcc
-CFLAGS = -W -Wall -ggdb
-
-all: finddupl
-
-finddupl: finddupl.o mlist.o mentry.o
-	$(CC) $(CFLAGS) -o finddupl finddupl.o mlist.o mentry.o
-
-finddupl.o: finddupl.c mlist.h mentry.h
-
-mentry.o: mentry.c mentry.h
-
-mlist.o: mlist.c mlist.h mentry.h
-
-clean:
-	rm -f *.o finddupl
-\end{lstlisting}
-
 
 \end{document}
