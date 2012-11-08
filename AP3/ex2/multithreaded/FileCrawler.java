@@ -3,7 +3,8 @@ import java.io.*;
 import java.util.regex.*;
 
 public class FileCrawler {
-	private static BlockingQueue<WorkItem> work_queue, matches;
+	private static BlockingQueue<WorkItem> work_queue;
+	private static BlockingQueue<String> matches;
 	private static String start_dir;
 	private static String search_string;
 	private static Pattern search_pattern;
@@ -46,7 +47,7 @@ public class FileCrawler {
 		work_queue = new LinkedBlockingQueue<WorkItem>();
 		
 		//initialise results data structure.
-		matches = new LinkedBlockingQueue<WorkItem>();
+		matches = new LinkedBlockingQueue<String>();
 		
 		//initialise and start worker threads, they'll wait for items to be added to the queue
 		Thread workers[] = new Thread[crawler_threads];
@@ -55,6 +56,8 @@ public class FileCrawler {
 			workers[i] = new Thread(new FileMatcher(work_queue, matches, search_pattern));
 			workers[i].start();
 		}
+		
+		System.err.printf("=== Started %d worker threads.\n", crawler_threads);
 		
 		//fill work queue with directories (recursive
 		processDirectory(start_dir);
@@ -73,9 +76,9 @@ public class FileCrawler {
 		System.err.println("=== all worker threads have finished - go to harvesting");
 
 		//print matches -- need to sort this?
-		WorkItem item;
-		while( ( item = matches.poll() ) != null ) {
-			System.out.println(item.getPath());
+		String m;
+		while( ( m = matches.poll() ) != null ) {
+			System.out.println(m);
 		}
 	}
 
@@ -87,23 +90,28 @@ public class FileCrawler {
 	* @param name    The name of a directory to visit
 	*/
 	public static void processDirectory( String name ) {
+		//remove trailing / if existing and name != /.
+		if (name.charAt(name.length()-1) == '/' && name.length() > 1) {
+			name = name.substring(0, name.length()-1);
+		}
 		try {
 			File file = new File(name);	// create a File object
 			if (file.isDirectory()) {	// a directory - could be symlink
 				String entries[] = file.list();
 				if (entries != null) {	// not a symlink
+					// only add directories to work queue
+					work_queue.put(new WorkItem(name));
+					// process directory child entries
 					for (String entry : entries ) {
 						if (entry.compareTo(".") == 0)
 							continue;
 						if (entry.compareTo("..") == 0)
 							continue;
+						// Don't need to check for directory/file here.
 						processDirectory(name+"/"+entry);
 					}
 				}
-			} else { //not a directory
-				//System.err.printf("Put:\t %s\n", name);
-				work_queue.put(new WorkItem(name)); // add file item to work queue
-			}
+			} 
 		} catch (Exception e) {
 			System.err.println("Error processing "+name+": "+e);
 		}
