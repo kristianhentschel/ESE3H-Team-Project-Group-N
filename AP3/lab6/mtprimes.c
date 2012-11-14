@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
 	nthread = 1;
 	for (i = 1; i < argc; ) {
 		if ((j = i + 1) == argc) {
-			fprintf(stderr, "usage: ./mtprimes [-b block] [-l limit] [-t nthread]\n", USAGE);
+			fprintf(stderr, "usage: ./mtprimes [-b block] [-l limit] [-t nthread]\n");
 			return -1;
 		}
 		if (strcmp(argv[i], "-b") == 0)
@@ -43,6 +43,17 @@ int main(int argc, char *argv[]) {
 	/* Note Start Time */
 	gettimeofday(&start, NULL);
 
+	/* initialize shared structures */
+
+	/* start single collector thread */
+
+	/* start nthread generator threads */
+
+	/* wait for collector thread to terminate */
+
+	/* interrupt all generator threads */
+
+	/* wait for all generator threads to finish */
 
 	/* Compute Time Usage */
 	gettimeofday(&stop, NULL);
@@ -53,7 +64,7 @@ int main(int argc, char *argv[]) {
 	msec = 1000 * (stop.tv_sec - start.tv_sec) +
 		(stop.tv_usec - start.tv_usec) / 1000;
 	msperprime= (double) msec / (double) limit;
-	fprintf(stderr, "%lu primes computed in %lu.%03lu seconds, %.3f ms/prime\n",
-			limit, msec/1000, msec%1000, msperprime);
+	fprintf(stderr, "limit/block/nthread = %lu/%lu/%d,  %lu.%03lu seconds, %.3f ms/prime\n",
+			limit, block, nthread, msec/1000, msec%1000, msperprime);
 	return 0;
 }

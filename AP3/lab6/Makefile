@@ -1,7 +1,7 @@
 CFLAGS = -g -W -Wall
 CC = gcc
 
-all: primes
+all: primes mtprimes
 
 primes: primes.o isprime.o
 
