@@ -4,8 +4,7 @@ import java.util.regex.*;
 
 public class FileCrawler {
 	private static BlockingQueue<WorkItem> work_queue;
-	private static BlockingQueue<String> matches;
-	private static String start_dir;
+	private static PriorityBlockingQueue<String> matches;
 	private static String search_string;
 	private static Pattern search_pattern;
 	private static int crawler_threads;
@@ -19,11 +18,6 @@ public class FileCrawler {
 		}
 
 		search_string = args[0];
-
-		if (args.length >= 2)
-			start_dir = args[1];
-		else
-			start_dir = "."; //default: start in working directory
 
 		String envvar;
 		if ((envvar = System.getenv("CRAWLER_THREADS")) == null) {
@@ -47,7 +41,7 @@ public class FileCrawler {
 		work_queue = new LinkedBlockingQueue<WorkItem>();
 		
 		//initialise results data structure.
-		matches = new LinkedBlockingQueue<String>();
+		matches = new PriorityBlockingQueue<String>();
 		
 		//initialise and start worker threads, they'll wait for items to be added to the queue
 		Thread workers[] = new Thread[crawler_threads];
@@ -59,9 +53,16 @@ public class FileCrawler {
 		
 		System.err.printf("=== Started %d worker threads.\n", crawler_threads);
 		
-		//fill work queue with directories (recursive
-		processDirectory(start_dir);
-
+		//fill work queue with directories (recursive)
+		if (argv.length == 1) {
+			processDirectory(".");
+		} else {
+			for(int i = 1; i < argv.length; i++ )
+			{
+				processDirectory(argv[i]);
+			}
+		}
+		
 		//place one suicide command in queue for each thread
 		for( int i = 0; i < crawler_threads; i++ ) {
 			work_queue.add( new WorkItem(true) );
