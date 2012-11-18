@@ -3,7 +3,7 @@ import java.io.*;
 import java.util.regex.*;
 
 public class FileCrawler {
-	private static BlockingQueue<String> work_queue;
+	private static BlockingQueue<WorkItem> work_queue;
 	private static PriorityBlockingQueue<String> matches;
 	private static String search_string;
 	private static Pattern search_pattern;
@@ -11,7 +11,7 @@ public class FileCrawler {
 
 
 	public static void main(String[] args) throws InterruptedException {
-	//parse arguments	
+		//parse arguments	
 		if (args.length == 0) {
 			System.err.println("Usage: fileCrawler pattern [directory]");
 			System.exit(1);
@@ -38,7 +38,7 @@ public class FileCrawler {
 		Pattern search_pattern = Pattern.compile(Regex.cvtPattern(search_string));
 		
 		//initialise work queue
-		work_queue = new LinkedBlockingQueue<String>();
+		work_queue = new LinkedBlockingQueue<WorkItem>();
 		
 		//initialise results data structure.
 		matches = new PriorityBlockingQueue<String>();
@@ -54,18 +54,18 @@ public class FileCrawler {
 		System.err.printf("=== Started %d worker threads.\n", crawler_threads);
 		
 		//fill work queue with directories (recursive)
-		if (args.length == 1) {
+		if (argv.length == 1) {
 			processDirectory(".");
 		} else {
-			for(int i = 1; i < args.length; i++ )
+			for(int i = 1; i < argv.length; i++ )
 			{
-				processDirectory(args[i]);
+				processDirectory(argv[i]);
 			}
 		}
 		
 		//place one suicide command in queue for each thread
 		for( int i = 0; i < crawler_threads; i++ ) {
-			work_queue.add( "" );
+			work_queue.add( new WorkItem(true) );
 		}
 
 		System.err.println("=== filled work queue, waiting for workers to finish.");
@@ -101,7 +101,7 @@ public class FileCrawler {
 				String entries[] = file.list();
 				if (entries != null) {	// not a symlink
 					// only add directories to work queue
-					work_queue.put(name);
+					work_queue.put(new WorkItem(name));
 					// process directory child entries
 					for (String entry : entries ) {
 						if (entry.compareTo(".") == 0)
