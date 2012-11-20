@@ -17,7 +17,7 @@ void *ts_fifo_dequeue( ts_fifo q );
  * adds an item to the tail of the queue
  * blocks until the lock is freed.
  */
-void ts_fifo_enqueue( ts_fifo q, void *item );
+int ts_fifo_enqueue( ts_fifo q, void *item );
 
 /*
  * destroys the queue and all nodes and items remaining in the queue.

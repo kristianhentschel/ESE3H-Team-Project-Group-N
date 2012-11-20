@@ -72,7 +72,7 @@ void *ts_fifo_dequeue( ts_fifo q ){
  * adds an item to the tail of the queue
  * blocks until the lock is freed.
  */
-void ts_fifo_enqueue( ts_fifo q, void *item ){
+int ts_fifo_enqueue( ts_fifo q, void *item ){
 	ts_fifo_node node;
 	//TODO lock and wait?
 
@@ -80,7 +80,7 @@ void ts_fifo_enqueue( ts_fifo q, void *item ){
 		pthread_mutex_unlock(&q->mutex);
 		
 		fprintf(stderr, "can't add item to fifo queue");
-		return;
+		return 0;
 	}
 
 	if (q->tail == NULL) {
@@ -95,6 +95,7 @@ void ts_fifo_enqueue( ts_fifo q, void *item ){
 
 	pthread_mutex_unlock(&q->mutex);
 	pthread_cond_broadcast(&q->cond);
+	return 1;
 }
 
 /*
