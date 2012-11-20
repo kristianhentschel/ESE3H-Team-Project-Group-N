@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
 	args->reg = reg;
 	
 	for (i = 0; i < CRAWLER_THREADS; i++) {
-		if(!pthread_create(&threads[i], NULL, worker, (void *) args))
+		if(pthread_create(&threads[i], NULL, worker, (void *) args))
 			fprintf(stderr, "could not launch thread %d\n", i);
 	}
 

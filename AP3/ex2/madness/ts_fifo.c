@@ -74,7 +74,10 @@ void *ts_fifo_dequeue( ts_fifo q ){
  */
 int ts_fifo_enqueue( ts_fifo q, void *item ){
 	ts_fifo_node node;
-	//TODO lock and wait?
+
+	fprintf(stderr, "in enqueue");
+	
+	pthread_mutex_lock(&q->mutex);
 
 	if( !(node = ts_fifo_node_create(item)) ) {
 		pthread_mutex_unlock(&q->mutex);
