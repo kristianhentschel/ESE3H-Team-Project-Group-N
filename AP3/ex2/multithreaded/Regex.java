@@ -4,6 +4,8 @@ import java.util.*;
 /**
  * class showing how to translate from bash pattern to RegEx pattern
  * and how to then use the resulting Regex pattern to match input from System.in
+ * This file is entirely not my own work and has been shamelessly
+ * plagiarized from the exercise handout.
  */
 
 public class Regex {

@@ -1,9 +1,19 @@
+/**
+ * Class fileCrawler: the main method includes the producer and
+ * harvest tasks for a simplified version of the find utility.
+ * This is my own work as defined in the Ethics Agreement I have signed,
+ * except for the code sections marked as taken from the sample code
+ * given in the exercise handout.
+ * @author Kristian Hentschel, 1003734h, for AP3 Exercise 2.
+ */
+
+
 import java.util.concurrent.*;
 import java.io.*;
 import java.util.regex.*;
 
-public class FileCrawler {
-	private static BlockingQueue<WorkItem> work_queue;
+public class fileCrawler {
+	private static BlockingQueue<String> work_queue;
 	private static PriorityBlockingQueue<String> matches;
 	private static String search_string;
 	private static Pattern search_pattern;
@@ -11,6 +21,8 @@ public class FileCrawler {
 
 
 	public static void main(String[] args) throws InterruptedException {
+		boolean debug = false;
+		
 		//parse arguments	
 		if (args.length == 0) {
 			System.err.println("Usage: fileCrawler pattern [directory]");
@@ -26,11 +38,11 @@ public class FileCrawler {
 			try {
 				crawler_threads = Integer.decode(envvar);
 			} catch (NumberFormatException e) {
-				System.err.println("Invalid value in CRAWLER_THREADS, must be an integer.");
+				if(debug) System.err.println("Invalid value in CRAWLER_THREADS, must be an integer.");
 				System.exit(1);
 			}
 			if (crawler_threads < 1) {
-				System.err.println("CRAWLER_THREADS must be greater than zero.");
+				if(debug) System.err.println("CRAWLER_THREADS must be greater than zero.");
 				System.exit(1);
 			}
 		}
@@ -38,43 +50,44 @@ public class FileCrawler {
 		Pattern search_pattern = Pattern.compile(Regex.cvtPattern(search_string));
 		
 		//initialise work queue
-		work_queue = new LinkedBlockingQueue<WorkItem>();
+		work_queue = new LinkedBlockingQueue<String>();
 		
 		//initialise results data structure.
 		matches = new PriorityBlockingQueue<String>();
 		
-		//initialise and start worker threads, they'll wait for items to be added to the queue
+		//initialise and start worker threads
+		//they'll wait for items to be added to the queue
 		Thread workers[] = new Thread[crawler_threads];
 
 		for( int i = 0; i < crawler_threads; i++ ) {
-			workers[i] = new Thread(new FileMatcher(work_queue, matches, search_pattern));
+			workers[i] = new Thread(new fileMatcher(work_queue, matches, search_pattern));
 			workers[i].start();
 		}
 		
-		System.err.printf("=== Started %d worker threads.\n", crawler_threads);
+		if(debug) System.err.printf("=== Started %d worker threads.\n", crawler_threads);
 		
 		//fill work queue with directories (recursive)
-		if (argv.length == 1) {
+		if (args.length == 1) {
 			processDirectory(".");
 		} else {
-			for(int i = 1; i < argv.length; i++ )
+			for(int i = 1; i < args.length; i++ )
 			{
-				processDirectory(argv[i]);
+				processDirectory(args[i]);
 			}
 		}
 		
 		//place one suicide command in queue for each thread
 		for( int i = 0; i < crawler_threads; i++ ) {
-			work_queue.add( new WorkItem(true) );
+			work_queue.add( "" );
 		}
 
-		System.err.println("=== filled work queue, waiting for workers to finish.");
+		if(debug) System.err.println("=== filled work queue, waiting for workers to finish.");
 
 		for( int i = 0; i < crawler_threads; i++ ) {
 			workers[i].join();			
 		}
 
-		System.err.println("=== all worker threads have finished - go to harvesting");
+		if(debug) System.err.println("=== all worker threads have finished - go to harvesting");
 
 		//print matches -- need to sort this?
 		String m;
@@ -87,7 +100,8 @@ public class FileCrawler {
 	* Works on a single file system entry and
 	* calls itself recursively if it turns out
 	* to be a directory.
-	* @author Taken from Joe's example code and modified to add item to work queue.
+	* @author Taken from Joe's example code. Modified to add
+	* the path name to the work queue.
 	* @param name    The name of a directory to visit
 	*/
 	public static void processDirectory( String name ) {
@@ -101,7 +115,7 @@ public class FileCrawler {
 				String entries[] = file.list();
 				if (entries != null) {	// not a symlink
 					// only add directories to work queue
-					work_queue.put(new WorkItem(name));
+					work_queue.put(name);
 					// process directory child entries
 					for (String entry : entries ) {
 						if (entry.compareTo(".") == 0)
