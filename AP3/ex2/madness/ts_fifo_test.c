@@ -3,14 +3,14 @@
 #include "ts_fifo.h"
 
 int main(int argc, char *argv[]){
-	ts_fifo q = ts_fifo_create();
+	ts_fifo *q = ts_fifo_create();
 
-	ts_fifo_enqueue(q, "Hello");
+	ts_fifo_add(q, "Hello");
 
-	ts_fifo_enqueue(q, "World");
+	ts_fifo_add(q, "World");
 
-	printf( "%s\n", (char *) ts_fifo_dequeue(q));
-	printf( "%s\n", (char *) ts_fifo_dequeue(q));
+	printf( "%s\n", (char *) ts_fifo_remove(q));
+	printf( "%s\n", (char *) ts_fifo_remove(q));
 
 	ts_fifo_destroy(q);
 

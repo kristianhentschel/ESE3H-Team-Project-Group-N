@@ -42,10 +42,12 @@ ts_fifo *ts_fifo_create(){
  * removes an item from the head of the queue.
  * blocks if the queue is empty, until an item becomes available.
  */
-void *ts_fifo_dequeue( ts_fifo *q ){
+void *ts_fifo_remove( ts_fifo *q ){
 	void *result;
 	node *n;
-	
+
+	fprintf(stderr, "ts_fifo_remove()\n");
+
 	pthread_mutex_lock(&q->mutex);
 	while( q->head == NULL ){
 		pthread_cond_wait(&q->cond, &q->mutex);
@@ -139,6 +141,6 @@ static node *node_create(void *item) {
  * frees a node structure (not freeing the item it contains yet!)
  */
 
-static void ts_fifo_node_destroy(node *n) {
+static void node_destroy(node *n) {
 	free(n);
 }
