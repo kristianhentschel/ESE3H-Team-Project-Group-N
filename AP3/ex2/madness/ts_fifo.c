@@ -60,8 +60,11 @@ void *ts_fifo_remove( ts_fifo *q ){
 		q->tail = NULL;
 	}
 	result = n->item;
-	node_destroy(n);	
-	
+	node_destroy(n);
+
+	fprintf(stderr, "ts_fifo_remove() got %s\n", (char *) result);
+
+
 	//done, unlock
 	pthread_mutex_unlock(&q->mutex);
 	return result;
@@ -74,7 +77,7 @@ void *ts_fifo_remove( ts_fifo *q ){
 int ts_fifo_add( ts_fifo *q, void *item ){
 	node *n;
 
-	fprintf(stderr, "ts_fifo_add()\n");
+	fprintf(stderr, "ts_fifo_add(), got %s\n", (char *) item);
 	
 	pthread_mutex_lock(&q->mutex);
 
@@ -134,6 +137,8 @@ static node *node_create(void *item) {
 	n->next = NULL;
 	n->item = item;
 
+	fprintf(stderr, "node_create added %s\n", (char *) n->item);  
+
 	return n;
 }
 
@@ -142,5 +147,6 @@ static node *node_create(void *item) {
  */
 
 static void node_destroy(node *n) {
+	fprintf(stderr, "node_destroy()\n");
 	free(n);
 }
