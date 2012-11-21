@@ -1,4 +1,4 @@
-CFLAGS = -W -Wall
+CFLAGS = -W -Wall -ggdb
 CC = gcc
 
 file_crawler: file_crawler.o ts_fifo.o re.o
