@@ -71,12 +71,21 @@ int main(int argc, char *argv[]) {
 			fprintf(stderr, "could not launch thread %d\n", i);
 	}
 
-	//fill work_queue with actual data
+	//fill work_queue with initial data
+	if(argc == 2) {
+		ts_fifo_add(work_queue, strdup("."));
+	} else {
+		for(i = 2; i < argc; i++)
+			ts_fifo_add(work_queue, argv[i]);
+	}	
 	
 	//add a suicide command for each thread so they will die when no more work is left.
-	for (i = 0; i < CRAWLER_THREADS; i++){	
+	//TODO can't do this anymore as our workers are now producers
+	//need to figure out a new way to signal that all dirs have been scanned.
+	/*for (i = 0; i < CRAWLER_THREADS; i++){	
 		ts_fifo_add(work_queue, NULL);
-	}
+	}*/
+
 
 	//wait for all threads to die
 	for (i = 0; i < CRAWLER_THREADS; i++){	
