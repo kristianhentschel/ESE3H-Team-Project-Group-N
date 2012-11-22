@@ -1,5 +1,6 @@
 #define _BSD_SOURCE 1
 
+#include <sys/types.h>
 #include <stdio.h>
 #include <dirent.h>
 #include <regex.h>
@@ -9,7 +10,7 @@
 #include "ts_fifo.h"
 #include "re.h"
 
-#define CRAWLER_THREADS 1
+#define CRAWLER_THREADS 4
 
 /* tool function signatures (taken from Joe's code) */
 static void cvtPattern(char pattern[], const char *bashpat); 
@@ -29,7 +30,6 @@ int main(int argc, char *argv[]) {
 	//initialise variables
 	int i;
 	pthread_t threads[CRAWLER_THREADS];
-	struct worker_args *args;
 	char pattern[1024];
 	char *dir;
 
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
 
 
 	//setup shared data structures in global variables
-	work_queue = ts_fifo_create();
+	work_queue = ts_fifo_create();	
 	results = ts_fifo_create();
 	//TODO Joe uses a tree set for the results.
 	//it should be a sorted data structure with O(log(n) insertion
@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
 
 	//create and launch worker threads
 	for (i = 0; i < CRAWLER_THREADS; i++) {
-		if(pthread_create(&threads[i], NULL, worker, (void *) args))
+		if(pthread_create(&threads[i], NULL, worker, NULL))
 			fprintf(stderr, "could not launch thread %d\n", i);
 	}
 
@@ -76,14 +76,14 @@ int main(int argc, char *argv[]) {
 		ts_fifo_add(work_queue, strdup("."));
 	} else {
 		for(i = 2; i < argc; i++)
-			ts_fifo_add(work_queue, argv[i]);
+			ts_fifo_add(work_queue, strdup(argv[i]));
 	}	
 	
 	//add a suicide command for each thread so they will die when no more work is left.
 	//TODO can't really do this anymore as our workers are now producers
 	//need to figure out a new way to signal that all dirs have been scanned.
 	for (i = 0; i < CRAWLER_THREADS; i++){	
-		ts_fifo_add(work_queue, "\0");
+		//ts_fifo_add(work_queue, "\0");
 	}
 
 
@@ -97,16 +97,15 @@ int main(int argc, char *argv[]) {
 
 	//harvest and print results
 	//TODO this cannot work as this fifo queue blocks if it is empty.
-	while( (dir = (char *) ts_fifo_remove(results)) != NULL ) {
-		printf("%s\n", dir);
+	while( !ts_fifo_isempty(results)) {
+	  dir = (char *) ts_fifo_remove(results);
+	  printf("%s\n", dir);
 	}
 
 
 	//destroy shared data structures
 	ts_fifo_destroy(work_queue);
 	ts_fifo_destroy(results);
-
-	free(args);
 
 	return 0;
 }
@@ -119,7 +118,7 @@ static void *worker(void *args) {
 		process_directory(dir);
 	}
 
-	fprintf(stderr, "Worker: My work here is done.\n");
+	fprintf(stderr, "Worker: Received \\0 byte.\n");
 
 	return NULL;
 }
@@ -189,11 +188,13 @@ static int process_directory(char *dirname){
 static void process_file(char *path){
 	char *filename	= strrchr(path, '/') + 1; //assumes that string does not end with /.
 	
-	fprintf(stderr, "process_file() \t%s\n", path);
+	fprintf(stderr, "process_file()\n");
 	
 	if( re_match(reg, filename) ){
+		fprintf(stderr, "matched %s\n", filename);
 		ts_fifo_add(results, path);
 	} else {
+		fprintf(stderr, "did not match %s\n", filename);
 		free(path);
 	}
 }

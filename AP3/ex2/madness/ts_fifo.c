@@ -150,3 +150,14 @@ static void node_destroy(node *n) {
 	fprintf(stderr, "node_destroy()\n");
 	free(n);
 }
+
+/*
+ * returns 1 if the queue is empty, 0 otherwise
+ */
+int ts_fifo_isempty( ts_fifo *q ) {
+	int result = 0;
+	pthread_mutex_lock(&q->mutex);
+	result = q->head == NULL;
+	pthread_mutex_unlock(&q->mutex);
+	return result;
+}

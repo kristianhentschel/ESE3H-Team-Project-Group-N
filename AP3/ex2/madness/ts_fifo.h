@@ -24,4 +24,10 @@ int ts_fifo_add( ts_fifo *q, void *item );
  */
 void ts_fifo_destroy( ts_fifo *q );
 
+
+/*
+ * returns 1 if the queue is empty (head == NULL), 0 otherwise
+ */
+int ts_fifo_isempty( ts_fifo *q );
+
 #endif /* _TS_FIFO_H_ */
