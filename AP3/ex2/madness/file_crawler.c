@@ -96,6 +96,7 @@ int main(int argc, char *argv[]) {
 	fprintf(stderr, "all workers finished, main thread harvesting now.\n");
 
 	//harvest and print results
+	//TODO this cannot work as this fifo queue blocks if it is empty.
 	while( (dir = (char *) ts_fifo_remove(results)) != NULL ) {
 		printf("%s\n", dir);
 	}
