@@ -80,11 +80,11 @@ int main(int argc, char *argv[]) {
 	}	
 	
 	//add a suicide command for each thread so they will die when no more work is left.
-	//TODO can't do this anymore as our workers are now producers
+	//TODO can't really do this anymore as our workers are now producers
 	//need to figure out a new way to signal that all dirs have been scanned.
-	/*for (i = 0; i < CRAWLER_THREADS; i++){	
-		ts_fifo_add(work_queue, NULL);
-	}*/
+	for (i = 0; i < CRAWLER_THREADS; i++){	
+		ts_fifo_add(work_queue, "\0");
+	}
 
 
 	//wait for all threads to die
@@ -92,10 +92,12 @@ int main(int argc, char *argv[]) {
 		pthread_join(threads[i], NULL);
 	}
 
+
+	fprintf(stderr, "all workers finished, main thread harvesting now.\n");
+
 	//harvest and print results
 	while( (dir = (char *) ts_fifo_remove(results)) != NULL ) {
 		printf("%s\n", dir);
-		free(dir); //malloc'd by strcpy somewhere in directory scanner.
 	}
 
 
@@ -114,7 +116,6 @@ static void *worker(void *args) {
 	char *dir;
 	while( *(dir = (char *) ts_fifo_remove(work_queue)) != '\0' ){
 		process_directory(dir);
-		free(dir);
 	}
 
 	fprintf(stderr, "Worker: My work here is done.\n");
@@ -171,7 +172,7 @@ static int process_directory(char *dirname){
 			/* sub directory, add to work queue */
 			ts_fifo_add(work_queue, p);
 		} else {
-			/* normal file entry. match regular expression and  add to results */
+			/* normal file entry. match regular expression and add to results */
 			process_file(p);
 		}
 	}
@@ -186,6 +187,9 @@ static int process_directory(char *dirname){
  */
 static void process_file(char *path){
 	char *filename	= strrchr(path, '/') + 1; //assumes that string does not end with /.
+	
+	fprintf(stderr, "process_file() \t%s\n", path);
+	
 	if( re_match(reg, filename) ){
 		ts_fifo_add(results, path);
 	} else {
