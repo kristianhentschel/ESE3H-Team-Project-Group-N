@@ -1,13 +1,14 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "ts_fifo.h"
 
 struct node {
 	void *item;
 	struct node *next;
 };
 
-struct queue {
+struct ts_fifo {
 	struct node *head;
 	struct node *tail;
 	pthread_mutex_t mutex;
@@ -15,19 +16,17 @@ struct queue {
 	//TODO include a function pointer to item destroy function?
 };
 
-typedef struct queue *ts_fifo_queue;
-typedef ts_fifo_queue ts_fifo;
-typedef struct node *ts_fifo_node;
+typedef struct node node;
 
-static void ts_fifo_node_destroy(ts_fifo_node node);
-static ts_fifo_node ts_fifo_node_create(void *item);
+static void node_destroy(node *node);
+static node *node_create(void *item);
 
 
 /* creates and initialises an empty queue */
-ts_fifo ts_fifo_create(){
-	ts_fifo_queue result;
+ts_fifo *ts_fifo_create(){
+	ts_fifo *result;
 
-	if( (result = (ts_fifo_queue) malloc(sizeof(struct queue))) == NULL)
+	if( (result = (ts_fifo *) malloc(sizeof(ts_fifo))) == NULL)
 		return NULL;
 
 
@@ -43,28 +42,31 @@ ts_fifo ts_fifo_create(){
  * removes an item from the head of the queue.
  * blocks if the queue is empty, until an item becomes available.
  */
-void *ts_fifo_dequeue( ts_fifo q ){
+void *ts_fifo_remove( ts_fifo *q ){
 	void *result;
-	ts_fifo_node node;
-	
-	//TODO lock and wait
+	node *n;
+
+	fprintf(stderr, "ts_fifo_remove()\n");
+
 	pthread_mutex_lock(&q->mutex);
 	while( q->head == NULL ){
 		pthread_cond_wait(&q->cond, &q->mutex);
 	}
 	
 	//an item is available now
-	node = q->head;
-	q->head = node->next;
-	if (node->next == NULL) {
+	n = q->head;
+	q->head = n->next;
+	if (n->next == NULL) {
 		q->tail = NULL;
 	}
-	result = node->item;
-	ts_fifo_node_destroy(node);	
-	
+	result = n->item;
+	node_destroy(n);
+
+	fprintf(stderr, "ts_fifo_remove() got %s\n", (char *) result);
+
+
 	//done, unlock
 	pthread_mutex_unlock(&q->mutex);
-
 	return result;
 }
 
@@ -72,27 +74,27 @@ void *ts_fifo_dequeue( ts_fifo q ){
  * adds an item to the tail of the queue
  * blocks until the lock is freed.
  */
-int ts_fifo_enqueue( ts_fifo q, void *item ){
-	ts_fifo_node node;
+int ts_fifo_add( ts_fifo *q, void *item ){
+	node *n;
 
-	fprintf(stderr, "in enqueue");
+	fprintf(stderr, "ts_fifo_add(), got %s\n", (char *) item);
 	
 	pthread_mutex_lock(&q->mutex);
 
-	if( !(node = ts_fifo_node_create(item)) ) {
+	if( !(n = node_create(item)) ) {
 		pthread_mutex_unlock(&q->mutex);
 		
-		fprintf(stderr, "can't add item to fifo queue");
+		fprintf(stderr, "can't add item to fifo queue\n");
 		return 0;
 	}
 
 	if (q->tail == NULL) {
-		q->head = q->tail = node;
+		q->head = q->tail = n;
 	} else {
-		q->tail->next = node;
-		q->tail = node;
+		q->tail->next = n;
+		q->tail = n;
 		if (q->head == NULL) {
-			q->head = node;
+			q->head = n;
 		}
 	}
 
@@ -103,17 +105,19 @@ int ts_fifo_enqueue( ts_fifo q, void *item ){
 
 /*
  * destroys the queue and all nodes still in it.
- * TODO add function pointer to destroy function for items.
- * current implementation does not free items themselves, only the pointers to them.
+ * does not free items themselves, only the pointers to them.
+ * User should ensure queue is emptied before it is being destroyed.
  */
-void ts_fifo_destroy( ts_fifo q ){
-	ts_fifo_node node;
+void ts_fifo_destroy( ts_fifo *q ){
+	node *n;
 	
+	fprintf(stderr, "ts_fifo_destroy()\n");
+
 	pthread_mutex_lock(&q->mutex);
 
-	while((node = (ts_fifo_node) q->head) != NULL) {
-		q->head = node->next;
-		ts_fifo_node_destroy(node);
+	while((n = q->head) != NULL) {
+		q->head = n->next;
+		node_destroy(n);
 	}
 
 	pthread_mutex_unlock(&q->mutex);
@@ -124,22 +128,36 @@ void ts_fifo_destroy( ts_fifo q ){
 /*
  * creates a node for our queue.
  */
-static ts_fifo_node ts_fifo_node_create(void *item) {
-	ts_fifo_node node;
+static node *node_create(void *item) {
+	node *n;
 
-	if((node = (ts_fifo_node) malloc(sizeof(struct node))) == NULL) 
+	if((n = (node *) malloc(sizeof(node))) == NULL) 
 		return NULL;
 
-	node->next = NULL;
-	node->item = item;
+	n->next = NULL;
+	n->item = item;
 
-	return node;
+	fprintf(stderr, "node_create added %s\n", (char *) n->item);  
+
+	return n;
 }
 
 /*
  * frees a node structure (not freeing the item it contains yet!)
  */
 
-static void ts_fifo_node_destroy(ts_fifo_node node) {
-	free(node);
+static void node_destroy(node *n) {
+	fprintf(stderr, "node_destroy()\n");
+	free(n);
+}
+
+/*
+ * returns 1 if the queue is empty, 0 otherwise
+ */
+int ts_fifo_isempty( ts_fifo *q ) {
+	int result = 0;
+	pthread_mutex_lock(&q->mutex);
+	result = q->head == NULL;
+	pthread_mutex_unlock(&q->mutex);
+	return result;
 }

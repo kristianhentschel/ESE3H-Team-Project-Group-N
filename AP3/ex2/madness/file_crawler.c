@@ -1,5 +1,6 @@
 #define _BSD_SOURCE 1
 
+#include <sys/types.h>
 #include <stdio.h>
 #include <dirent.h>
 #include <regex.h>
@@ -9,34 +10,29 @@
 #include "ts_fifo.h"
 #include "re.h"
 
-#define CRAWLER_THREADS 1
+#define CRAWLER_THREADS 4
 
-/* recursive method that adds directories to the work queue. */
-static int processDirectory(char *dirname, ts_fifo work_queue, int verbose);
-
-/* convert given bash pattern to regular expression */
+/* tool function signatures (taken from Joe's code) */
 static void cvtPattern(char pattern[], const char *bashpat); 
 
-static int applyRe(char *dir, RegExp *reg, ts_fifo ts); 
+/* global variables */
+static ts_fifo *work_queue;
+static ts_fifo *results; 
+static RegExp *reg;
 
-
-/* the worker thread's main method */
-struct worker_args {
-	ts_fifo work_queue;
-	ts_fifo results; 
-	RegExp *reg;
-};
-
+/* worker thread and tool functions accessing shared data structures */
 static void *worker(void *args);
+static int process_directory(char *dirname);
+static void process_file(char *filename);
 
+/* main thread */
 int main(int argc, char *argv[]) {
 	//initialise variables
 	int i;
 	pthread_t threads[CRAWLER_THREADS];
-	struct worker_args *args;
 	char pattern[1024];
-	RegExp *reg;
 	char *dir;
+
 
 	//START parse arguments (taken from Joe's starting code)
 	if (argc < 2) {
@@ -59,38 +55,51 @@ int main(int argc, char *argv[]) {
 	  re_destroy(reg);
 	  return -1;
 	}
-	//END Joe's code
+	//END Joe's argument parsing code
 
-	//setup shared data structures
-	ts_fifo work_queue = ts_fifo_create();
-	ts_fifo results = ts_fifo_create();
+
+	//setup shared data structures in global variables
+	work_queue = ts_fifo_create();	
+	results = ts_fifo_create();
+	//TODO Joe uses a tree set for the results.
+	//it should be a sorted data structure with O(log(n) insertion
+	//maybe I will write an AVL tree or something.
 
 	//create and launch worker threads
-	if( (args = malloc(sizeof(struct worker_args))) == NULL)
-		return -1;
-	
-	args->work_queue = work_queue;
-	args->results = results;
-	args->reg = reg;
-	
 	for (i = 0; i < CRAWLER_THREADS; i++) {
-		if(pthread_create(&threads[i], NULL, worker, (void *) args))
+		if(pthread_create(&threads[i], NULL, worker, NULL))
 			fprintf(stderr, "could not launch thread %d\n", i);
 	}
 
-	//fill work_queue with actual data
+	//fill work_queue with initial data
+	if(argc == 2) {
+		ts_fifo_add(work_queue, strdup("."));
+	} else {
+		for(i = 2; i < argc; i++)
+			ts_fifo_add(work_queue, strdup(argv[i]));
+	}	
 	
 	//add a suicide command for each thread so they will die when no more work is left.
+	//TODO can't really do this anymore as our workers are now producers
+	//need to figure out a new way to signal that all dirs have been scanned.
+	for (i = 0; i < CRAWLER_THREADS; i++){	
+		//ts_fifo_add(work_queue, "\0");
+	}
+
 
 	//wait for all threads to die
 	for (i = 0; i < CRAWLER_THREADS; i++){	
 		pthread_join(threads[i], NULL);
 	}
 
+
+	fprintf(stderr, "all workers finished, main thread harvesting now.\n");
+
 	//harvest and print results
-	while( (dir = (char *) ts_fifo_dequeue(results)) != NULL ) {
-		printf("%s\n", dir);
-		free(dir); //TODO
+	//TODO this cannot work as this fifo queue blocks if it is empty.
+	while( !ts_fifo_isempty(results)) {
+	  dir = (char *) ts_fifo_remove(results);
+	  printf("%s\n", dir);
 	}
 
 
@@ -98,103 +107,96 @@ int main(int argc, char *argv[]) {
 	ts_fifo_destroy(work_queue);
 	ts_fifo_destroy(results);
 
-	free(args);
-
 	return 0;
 }
 
 
 
-static void *worker(void *args_voidstar) {
+static void *worker(void *args) {
 	char *dir;
-	struct worker_args *args = (struct worker_args *) args_voidstar; 
-	while( *(dir = (char *) ts_fifo_dequeue(args->work_queue)) != '\0' ){
-		applyRe(dir, args->reg, args->results);
+	while( *(dir = (char *) ts_fifo_remove(work_queue)) != '\0' ){
+		process_directory(dir);
 	}
 
-	fprintf(stderr, "Worker: My work here is done.\n");
+	fprintf(stderr, "Worker: Received \\0 byte.\n");
 
 	return NULL;
 }
 
-
-
-
 /*
- * recursively opens directory files
+ * Non-recursive directory scanner and file matcher.
+ * Opens a directory and scans its entries. Does not descend of subdirectories.
+ * - If an entry is a file, it is matched against the regular expression and added to
+ *   the results structure if it matches.
+ * - If an entry is a directory, it is added to the work queue itself, to be picked up
+ *   again later by any worker.
+ * returns 1 on error, 0 on success.
  *
- * if the directory is successfully opened, it is added to the linked list
- *
- * for each entry in the directory, if it is itself a directory,
- * processDirectory is recursively invoked on the fully qualified name
- *
- * if there is an error opening the directory, an error message is
- * printed on stderr, and 1 is returned, as this is most likely indicative
- * of a protection violation
- *
- * if there is an error duplicating the directory name, or adding it to
- * the linked list, an error message is printed on stderr and 0 is returned
- *
- * if no problems, returns 1
- * 
- * By Joe Sventek, part of the starting files for AP3 Ex 2. Modified to add
- * to a ts_fifo queue instead of a linked list.
+ * based on Joe's example code from processDirectory.
  */
+static int process_directory(char *dirname){
+	DIR *dd;
+	struct dirent *dent;
+	int len, status = 1;
+	char d[4096];
 
-static int processDirectory(char *dirname, ts_fifo work_queue, int verbose) {
-   DIR *dd;
-   struct dirent *dent;
-   char *sp;
-   int len, status = 1;
-   char d[4096];
+	/*
+	 * eliminate trailing slash, if there
+	 */
+	strcpy(d, dirname);
+	len = strlen(d);
+	if (len > 1 && d[len-1] == '/')
+		d[len-1] = '\0';
+	
+	/*
+	 * open the directory
+	 */
+	if ((dd = opendir(d)) == NULL) {
+		fprintf(stderr, "Error opening directory `%s'\n", d);
+		return 1;
+	}
 
-   /*
-    * eliminate trailing slash, if there
-    */
-   strcpy(d, dirname);
-   len = strlen(d);
-   if (len > 1 && d[len-1] == '/')
-      d[len-1] = '\0';
-   /*
-    * open the directory
-    */
-   if ((dd = opendir(d)) == NULL) {
-      if (verbose)
-         fprintf(stderr, "Error opening directory `%s'\n", d);
-      return 1;
-   }
-   /*
-    * duplicate directory name to insert into linked list
-    */
-   sp = strdup(d);
-   if (sp == NULL) {
-      fprintf(stderr, "Error adding `%s' to linked list\n", d);
-      status = 0;
-      goto cleanup;
-   }
-   if (!ts_fifo_enqueue(work_queue, (void *) sp)) {
-      fprintf(stderr, "Error adding `%s' to linked list\n", sp);
-      free(sp);
-      status = 0;
-      goto cleanup;
-   }
-   if (len == 1 && d[0] == '/')
-      d[0] = '\0';
-   /*
-    * read entries from the directory
-    */
-   while (status && (dent = readdir(dd)) != NULL) {
-      if (strcmp(".", dent->d_name) == 0 || strcmp("..", dent->d_name) == 0)
-         continue;
-      if (dent->d_type & DT_DIR) {
-         char b[4096];
-         sprintf(b, "%s/%s", d, dent->d_name);
-	 status = processDirectory(b, work_queue, 0);
-      }
-   }
-cleanup:
-   (void) closedir(dd);
-   return status;
+
+	while (status && (dent = readdir(dd)) != NULL) {
+		/* ignore . and .. entries */
+		if (strcmp(".", dent->d_name) == 0 || strcmp("..", dent->d_name) == 0)
+			continue;
+		
+		/* generate full path */
+		char b[4096];
+		char *p;
+		sprintf(b, "%s/%s", d, dent->d_name);
+		p = strdup(b);
+
+		if (dent->d_type & DT_DIR) {
+			/* sub directory, add to work queue */
+			ts_fifo_add(work_queue, p);
+		} else {
+			/* normal file entry. match regular expression and add to results */
+			process_file(p);
+		}
+	}
+
+	(void) closedir(dd);
+	return 0;
+}
+
+/* 
+ * matches file against regular expression and adds it to the results data structure
+ * if it matches. destroys given string afterwards to clean up.
+ */
+static void process_file(char *path){
+	char *filename	= strrchr(path, '/') + 1; //assumes that string does not end with /.
+	
+	fprintf(stderr, "process_file()\n");
+	
+	if( re_match(reg, filename) ){
+		fprintf(stderr, "matched %s\n", filename);
+		ts_fifo_add(results, path);
+	} else {
+		fprintf(stderr, "did not match %s\n", filename);
+		free(path);
+	}
 }
 
 /*
@@ -236,59 +238,4 @@ static void cvtPattern(char pattern[], const char *bashpat) {
    }
    *p++ = '$';
    *p = '\0';
-}
-
-
-/*
- * applies regular expression pattern to contents of the directory
- *
- * for entries that match, the fully qualified pathname is inserted into
- * the treeset
- * By Joe Sventek. modified to add to queue instead of tree set.
- */
-static int applyRe(char *dir, RegExp *reg, ts_fifo ts) {
-   DIR *dd;
-   struct dirent *dent;
-   int status = 1;
-
-   /*
-    * open the directory
-    */
-   if ((dd = opendir(dir)) == NULL) {
-      fprintf(stderr, "Error opening directory `%s'\n", dir);
-      return 0;
-   }
-   /*
-    * for each entry in the directory
-    */
-   while (status && (dent = readdir(dd)) != NULL) {
-      if (strcmp(".", dent->d_name) == 0 || strcmp("..", dent->d_name) == 0)
-         continue;
-      if (!(dent->d_type & DT_DIR)) {
-         char b[4096], *sp;
-	 /*
-	  * see if filename matches regular expression
-	  */
-	 if (! re_match(reg, dent->d_name))
-            continue;
-         sprintf(b, "%s/%s", dir, dent->d_name);
-	 /*
-	  * duplicate fully qualified pathname for insertion into queue
-	  */
-	 if ((sp = strdup(b)) != NULL) {
-            if (!ts_fifo_enqueue(ts, sp)) {
-               fprintf(stderr, "Error adding `%s' to queue\n", sp);
-	       free(sp);
-	       status = 0;
-	       break;
-	    }
-	 } else {
-            fprintf(stderr, "Error adding `%s' to queue\n", b);
-	    status = 0;
-	    break;
-	 }
-      }
-   }
-   (void) closedir(dd);
-   return status;
 }
