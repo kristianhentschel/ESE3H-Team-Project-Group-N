@@ -18,7 +18,7 @@ int connect_hostname(const char hostname[]);
 
 int main( int argc, char* argv[] ) {
 	int servfd;
-	int count;
+	int count, i;
 	char buf[BUFSIZE];
 
 	if (argc < 2) {
@@ -30,21 +30,25 @@ int main( int argc, char* argv[] ) {
 	if ((servfd = connect_hostname(argv[1])) < 0) {
 		return 1;
 	}
-		
-	//write
-	write(servfd, MESSAGE, sizeof(MESSAGE));
 
-	//read response and print to stdout
-	while ((count = read(servfd, &buf, BUFSIZE)) > 0) {
-		if (count == -1) {
-			perror("Read failed");
-			close(servfd);
-			return 1;
+	for(i = 0; i < 10; i++) {
+		//write
+		write(servfd, MESSAGE, sizeof(MESSAGE));
+
+		//read response and print to stdout
+		while ((count = read(servfd, &buf, BUFSIZE)) > 0) {
+			if (count == -1) {
+				perror("Read failed");
+				close(servfd);
+				return 1;
+			}
+
+			fwrite(&buf, sizeof(char), count, stdout);
 		}
-
-		fwrite(&buf, sizeof(char), count, stdout);
+		fprintf(stdout, "\n");
+	
+		sleep(1);
 	}
-	fprintf(stdout, "\n");
 
 	//close connection
 	close(servfd);
