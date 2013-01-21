@@ -73,7 +73,7 @@ static void do_TIME(int fd) {
 	time_t t = time(NULL);
 	struct tm *tm = localtime( &t );
 //TODO there msut be a get timespec for current local time function, so we can plug something directly into strftime...
-	len = strftime( data, TIMEBUFSIZE, "%H:%M:%S", tm );
+	len = strftime( data, TIMEBUFSIZE, "%H:%M:%S\n", tm );
 	write(fd, data, len);
 	fprintf(stderr, "served TIME request.\n");
 }
@@ -83,7 +83,7 @@ static void do_DATE(int fd){
 	int len;
 	time_t t = time(NULL);
 	struct tm *tm = localtime( &t );
-	len = strftime( data, TIMEBUFSIZE, "%d %b %Y", tm );
+	len = strftime( data, TIMEBUFSIZE, "%d %b %Y\n", tm );
 	write(fd, data, len);
 	fprintf(stderr, "served DATE request.\n");
 }
@@ -111,9 +111,9 @@ static void serve_requests(int connfd) {
 		
 		printf("read into buffer: %s\n", buf);
 
-		for (p = buf; *p != '\0'; p++) {
+		for (p = buf; p < buf + buf_count; p++) {
 			c = *p;
-			
+						
 			switch (state) {
 				case S_INIT:
 					if ( isalpha((int) c) ) {

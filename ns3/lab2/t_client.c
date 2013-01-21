@@ -19,7 +19,7 @@ int connect_hostname(const char hostname[]);
 int main( int argc, char* argv[] ) {
 	int servfd;
 	int count, i;
-	char buf[BUFSIZE];
+	char buf[BUFSIZE], *p;
 
 	if (argc < 2) {
 		fprintf(stderr, "Usage: %s server_hostname\n", argv[0]);
@@ -34,16 +34,27 @@ int main( int argc, char* argv[] ) {
 	for(i = 0; i < 10; i++) {
 		//write
 		write(servfd, MESSAGE, sizeof(MESSAGE));
+		write(servfd, MESSAGE, sizeof(MESSAGE));
 
 		//read response and print to stdout
-		while ((count = read(servfd, &buf, BUFSIZE)) > 0) {
+		while ((count = read(servfd, &buf, BUFSIZE-1)) > 0) {
 			if (count == -1) {
 				perror("Read failed");
 				close(servfd);
 				return 1;
 			}
+			buf[count] = '\0';
+			
 
 			fwrite(&buf, sizeof(char), count, stdout);
+			
+			/* got a \0 from the socket, not from here?
+			 * If we did, assume anything after is junk, */
+			for (p = buf; *p != '\0'; p++)
+				;
+			if (p - buf < count - 1) {
+				break;
+			}
 		}
 		fprintf(stdout, "\n");
 	
