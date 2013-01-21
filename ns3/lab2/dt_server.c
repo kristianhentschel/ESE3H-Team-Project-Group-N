@@ -98,18 +98,18 @@ static void handle(int connfd, const char request_type[], const char request_dat
 
 static void serve_requests(int connfd) {
 	int count;
-	int c;
+	char c;
 	char type_buf[BUFSIZE];
 	enum {IN_KEYWORD, OUT, AFTER_KEYWORD} state;
 
 	//read one character at a time
 	printf("connection accpeted\n");	
 	while (read(connfd, &c, 1) > 0 ) {
-		if ( state == OUT && isalpha(c)){
+		if ( state == OUT && isalpha((int)c)){
 			state = IN_KEYWORD;
 			count = 0;
 		}
-		if ( state == IN_KEYWORD && !isalpha(c)){
+		if ( state == IN_KEYWORD && !isalpha((int)c)){
 			state = AFTER_KEYWORD;
 			type_buf[count] = '\0';
 			printf("captured keyword %s\n", type_buf);
