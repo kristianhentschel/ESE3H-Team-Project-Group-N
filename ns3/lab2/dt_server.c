@@ -7,16 +7,19 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <unistd.h>
-
+#include <assert.h>
+#include <ctype.h>
 #include <time.h>
 
 #define BACKLOG 1
 #define BUFSIZE 16
 #define PORT 5001
+#define TIMEBUFSIZE 64
 
 static void do_TIME(int fd);
 static void do_DATE(int fd);
 static void serve_request(int connfd);
+static void serve_requests(int connfd);
 
 int main( void ) {
 	int 				sockfd, connfd;
@@ -54,17 +57,15 @@ int main( void ) {
 		close(sockfd);
 		return 1;
 	} else {
-		serve_request(connfd);
+		serve_requests(connfd);
 	}
 	
-	//close individual connection and socket.
-	close(connfd);
+	//close overall socket
 	close(sockfd);
 
 	return 0;
 }
 
-#define TIMEBUFSIZE 16
 
 static void do_TIME(int fd) {
 	char data[TIMEBUFSIZE];
@@ -85,6 +86,50 @@ static void do_DATE(int fd){
 
 }
 
+static void handle(int connfd, const char request_type[], const char request_data[]) {
+	if (strcmp("DATE", request_type) == 0) {
+		do_DATE(connfd);
+	}else if (strcmp("TIME", request_type) == 0) {
+		do_TIME(connfd);
+	}else {
+		fprintf(stderr, "Unknown request %s %s\n", request_type, request_data);
+	}
+}
+
+static void serve_requests(int connfd) {
+	int count;
+	int c;
+	char type_buf[BUFSIZE];
+	enum {IN_KEYWORD, OUT, AFTER_KEYWORD} state;
+
+	//read one character at a time
+	printf("connection accpeted\n");	
+	while (read(connfd, &c, 1) > 0 ) {
+		if ( state == OUT && isalpha(c)){
+			state = IN_KEYWORD;
+			count = 0;
+		}
+		if ( state == IN_KEYWORD && !isalpha(c)){
+			state = AFTER_KEYWORD;
+			type_buf[count] = '\0';
+			printf("captured keyword %s\n", type_buf);
+			/* a single keyword is all we need to handle a basic request */
+			if( strcmp(type_buf, "DATE") == 0 || strcmp(type_buf, "TIME") ) {	
+				/* ignore rest of line after simple keyword */
+				while( read(connfd, &c, 1) > 0 && c != '\n' )
+					;
+				printf("handling simple %s request\n", type_buf);
+				handle(connfd, type_buf, NULL);
+			}
+
+		} else if (state == IN_KEYWORD && count < BUFSIZE-1) {
+			printf("added %c to keyword buffer\n", (char) c);
+			type_buf[count++] = (char) c;
+		}
+	}
+	close(connfd);
+
+}
 
 static void serve_request(int connfd) {
 	int count;
