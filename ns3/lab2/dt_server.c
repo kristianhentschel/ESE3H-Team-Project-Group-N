@@ -16,12 +16,12 @@
 
 static void do_TIME(int fd);
 static void do_DATE(int fd);
+static void serve_request(int connfd);
 
 int main( void ) {
-	int 				sockfd, connfd, count;
+	int 				sockfd, connfd;
 	struct sockaddr_in	addr, cliaddr;
 	socklen_t			cliaddrlen = sizeof(cliaddr);
-	char				buf[BUFSIZE];
 
 	//allocate a socket
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -53,7 +53,42 @@ int main( void ) {
 		perror("Accept failed");
 		close(sockfd);
 		return 1;
+	} else {
+		serve_request(connfd);
 	}
+	
+	//close individual connection and socket.
+	close(connfd);
+	close(sockfd);
+
+	return 0;
+}
+
+#define TIMEBUFSIZE 16
+
+static void do_TIME(int fd) {
+	char data[TIMEBUFSIZE];
+	int len;
+	time_t t = time(NULL);
+	struct tm *tm = localtime( &t );
+//TODO there msut be a get timespec for current local time function, so we can plug something directly into strftime...
+	len = strftime( data, TIMEBUFSIZE, "%H:%M:%S", tm );
+	write(fd, data, len);
+}
+static void do_DATE(int fd){
+	char data[TIMEBUFSIZE];
+	int len;
+	time_t t = time(NULL);
+	struct tm *tm = localtime( &t );
+	len = strftime( data, TIMEBUFSIZE, "%d %b %Y", tm );
+	write(fd, data, len);
+
+}
+
+
+static void serve_request(int connfd) {
+	int count;
+	char buf[BUFSIZE];
 
 	//read into buffer.
 	count = read(connfd, &buf, BUFSIZE-1);
@@ -67,19 +102,5 @@ int main( void ) {
 		fprintf(stderr, "invalid command\n");
 	}
 	close(connfd);
-	
-	//close individual connection and socket.
-	close(connfd);
-	close(sockfd);
 
-	return 0;
-}
-
-static void do_TIME(int fd) {
-	const char msg[] = "hello time\n";
-	write(fd, msg, sizeof(msg));
-}
-static void do_DATE(int fd){
-	const char msg[] = "hello date\n";
-	write(fd, msg, sizeof(msg));
 }
