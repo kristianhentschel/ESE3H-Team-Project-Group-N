@@ -75,7 +75,9 @@ static void do_TIME(int fd) {
 //TODO there msut be a get timespec for current local time function, so we can plug something directly into strftime...
 	len = strftime( data, TIMEBUFSIZE, "%H:%M:%S", tm );
 	write(fd, data, len);
+	fprintf(stderr, "served TIME request.\n");
 }
+
 static void do_DATE(int fd){
 	char data[TIMEBUFSIZE];
 	int len;
@@ -83,7 +85,7 @@ static void do_DATE(int fd){
 	struct tm *tm = localtime( &t );
 	len = strftime( data, TIMEBUFSIZE, "%d %b %Y", tm );
 	write(fd, data, len);
-
+	fprintf(stderr, "served DATE request.\n");
 }
 
 static void handle(int connfd, const char request_type[], const char request_data[]) {
@@ -97,36 +99,55 @@ static void handle(int connfd, const char request_type[], const char request_dat
 }
 
 static void serve_requests(int connfd) {
-	int count;
-	char c;
-	char type_buf[BUFSIZE];
-	enum {IN_KEYWORD, OUT, AFTER_KEYWORD} state;
+	int type_count, buf_count;
+	char *p, buf[BUFSIZE], type[BUFSIZE], c;
+	enum {S_INIT, S_IN_TYPE, S_AFTER_TYPE} state;
 
-	//read one character at a time
-	printf("connection accpeted\n");	
-	while (read(connfd, &c, 1) > 0 ) {
-		if ( state == OUT && isalpha((int)c)){
-			state = IN_KEYWORD;
-			count = 0;
-		}
-		if ( state == IN_KEYWORD && !isalpha((int)c)){
-			state = AFTER_KEYWORD;
-			type_buf[count] = '\0';
-			printf("captured keyword %s\n", type_buf);
-			/* a single keyword is all we need to handle a basic request */
-			if( strcmp(type_buf, "DATE") == 0 || strcmp(type_buf, "TIME") ) {	
-				/* ignore rest of line after simple keyword */
-				while( read(connfd, &c, 1) > 0 && c != '\n' )
-					;
-				printf("handling simple %s request\n", type_buf);
-				handle(connfd, type_buf, NULL);
+	printf("connection accepted\n");
+	
+	state = S_INIT;
+	while ( (buf_count = read(connfd, &buf, BUFSIZE-1)) > 0 ) {
+		buf[buf_count] = '\0';
+		
+		printf("read into buffer: %s\n", buf);
+
+		for (p = buf; *p != '\0'; p++) {
+			c = *p;
+			
+			switch (state) {
+				case S_INIT:
+					if ( isalpha((int) c) ) {
+						state = S_IN_TYPE;
+						type_count = 0;
+						type[type_count++] = c;
+					}
+					break;
+				case S_IN_TYPE:
+					if ( isalpha((int) c) ) {
+						type[type_count++] = c;
+						if (type_count > BUFSIZE - 1) {
+							state = S_INIT;
+							printf("buffer overflow in scanning for type keyword\n");
+						}
+					} else {
+						state = S_AFTER_TYPE;
+						type[type_count] = '\0';
+					}
+					break;
+				case S_AFTER_TYPE:
+					if (c == '\n') {
+						handle(connfd, type, "");
+						state = S_INIT;
+					}
+					break;
+				default:
+					assert(0);
+
 			}
-
-		} else if (state == IN_KEYWORD && count < BUFSIZE-1) {
-			printf("added %c to keyword buffer\n", (char) c);
-			type_buf[count++] = (char) c;
 		}
 	}
+
+
 	close(connfd);
 
 }
