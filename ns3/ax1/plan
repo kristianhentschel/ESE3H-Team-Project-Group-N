@@ -1,0 +1,49 @@
+Simple Web Server (httpd).
+
+=== Implementations ===
+
+Features
+	- HTTP/1.1 GET Requests only. All other request methods will be handled as 400 Bad Request.
+	- Serve files from current working directory.
+	- Send correct content-type based on extension for .html, .txt, .jpg, .jpeg, .gif, .png. Send application/octed-stream for all others.
+
+Basic Implementation
+	- support one request and shut down.
+
+Muliple Sequential Requests
+	- one request per connection.
+
+Multiple Requests
+	- support multiple requests on the same connection
+
+Multi-Threaded
+	- Start a new worker thread for each connection
+
+Thread-Pool
+	- Maintain a pool of workers ready to take on new connections and distribute a connection to an idle task.
+
+=== HTTP Requests ===
+
+Line-end is \r\n.
+End of request is an empty line (just \r\n)
+Only handle GET requests.
+First line is the method:
+GET /path/to/file.html HTTP/1.1
+Then an arbitrary number of headers follow.
+Headers are case-insensitive
+Host: bo720-001-04 (compare this to actualhostname and only take requests matching it)
+ignore headers other than host.
+
+=== HTTP Responses ===
+
+Line-end is \r\n. Separate Headers from content by one empty line.
+Required Headers: Content-Type, Content-Length, connection:close until multiple requests on the same connection are supported.
+
+=== Implementation ===
+
+== Reading from Socket ==
+declare a dynamic buffer pointer.
+Read into a static buffer until client closes connection (while read() != 0). add a \0 to the end of the read data.
+strcat buffer to the end of the dynamic buffer. and clear old one. each time, scan for a double \r\n\r\n which signifies the end of a request. if that is found, hand the dynamic buffer to the request handler/parser. then, copy the remaining data in the dynamic buffer to a new one (strcpy from halfway through) and free the old one. then keep reading and parsing for next request.
+
+
