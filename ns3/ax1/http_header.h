@@ -8,5 +8,6 @@
  *
  */
 
+struct kwstruct { char* word, int CODE };
 
 #endif /*__HTTP_HEADER_H__ */
