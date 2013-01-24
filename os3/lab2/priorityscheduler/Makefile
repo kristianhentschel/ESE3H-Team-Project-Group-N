@@ -1,4 +1,4 @@
-CFLAGS=-W -Wall -pedantic
+CFLAGS=-W -Wall -pedantic -g
 OBJS= diagnostics.o generic_collection.o generic_queue.o tcb_collection.o TCB.o testscheduler.o
 
 all: staticpriorityscheduler dynamicpriorityscheduler
