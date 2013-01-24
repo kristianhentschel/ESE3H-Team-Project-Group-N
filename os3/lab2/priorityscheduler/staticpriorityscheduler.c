@@ -7,7 +7,7 @@ static TCB *idle_task;
 
 static GQueue *ready_queues[MAX_PRIO - MIN_PRIO + 1];
 
-static enum {INIT, IDLE, RUNNING} state;
+static enum {IDLE, RUNNING} state;
 
 
 void dispatch_task(void);
@@ -79,15 +79,16 @@ void scheduler(void) {
 void dispatch_task(void) {
 	int i;
 
-	for (i = MIN_PRIO; i < MIN_PRIO + MAX_PRIO; i++) {
-		if (gqueue_length(ready_queues[i]) > 0) {
-			gqueue_dequeue(ready_queues[i], (GQueueElement *) &current_task);
+	for (i = 0; i <= MIN_PRIO + MAX_PRIO; i++) {
+		int index = MIN_PRIO + i;
+		if (gqueue_length(ready_queues[index]) > 0) {
+			gqueue_dequeue(ready_queues[index], (GQueueElement *) &current_task);
 			fprintf(stderr, "Scheduler: Dispatching task with priority %d\n", get_static_priority(current_task));
 			break;
 		}
 	}
 
-	if (i == MIN_PRIO + MAX_PRIO) {
+	if (i == MIN_PRIO + MAX_PRIO + 1) {
 		current_task = idle_task;
 		state = IDLE;
 		fprintf(stderr, "Scheduler: Dispatching idle task\n");
