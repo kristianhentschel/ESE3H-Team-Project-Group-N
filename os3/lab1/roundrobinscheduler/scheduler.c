@@ -11,6 +11,7 @@ static GQueue *ready_queue;
 
 /* holds TCB of currently running task */
 static TCB *current_task;
+static TCB *idle_task;
 
 static int scheduler_state;
 
@@ -49,9 +50,17 @@ void block(void) {
 /* timeslice expired.
  * unload current task and schedule next one off the ready queue */
 void scheduler(void) {
-	if (scheduler_state == RUNNING) {
-		move_from_CPU_to_TCB(current_task);
-		gqueue_enqueue(ready_queue, (GQueueElement) current_task);
+	switch(scheduler_state) {
+		case RUNNING:
+			move_from_CPU_to_TCB(current_task);
+			gqueue_enqueue(ready_queue, (GQueueElement) current_task);
+			break;
+		case IDLE:
+			move_from_CPU_to_TCB(idle_task);
+			break;
+		case INIT:
+			idle_task = get_idle_task();
+			break;
 	}
 	schedule_task();
 }
@@ -62,7 +71,7 @@ void scheduler(void) {
 static void schedule_task(void) {
 	if(gqueue_length(ready_queue) == 0) {
 		scheduler_state = IDLE;
-		current_task = get_idle_task();
+		current_task = idle_task;
 	} else {
 		scheduler_state = RUNNING;
 		gqueue_dequeue(ready_queue, (GQueueElement *) &current_task);
