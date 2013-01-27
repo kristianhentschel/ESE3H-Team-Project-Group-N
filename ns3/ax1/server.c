@@ -1,4 +1,5 @@
 #include "networking.h"
+#include "linkedstringbuffer.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,6 +7,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+
 #define SERVER_PORT 8080
 #define SERVER_BACKLOG 16
 #define BUFFER_SIZE 64
@@ -18,67 +20,137 @@ void errlog(char *msg) {
 }
 
 int main(void) {
-	int sockfd, connfd;
-	
-	sockfd = open_socket(SERVER_PORT);
-	bind(sockfd, SERVER_PORT);
-	listen(sockfd, SERVER_BACKLOG);
-	
-	while (1){
-		connfd = accept(sockfd);
-		handle_connection(connfd);
-		close(connfd);
+	int 				sockfd, connfd;
+	struct sockaddr_in	addr, cliaddr;
+	socklen_t			cliaddrlen = sizeof(cliaddr);
+
+	//allocate a socket
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
+	if (sockfd == -1) {
+		perror("Could not create socket");
+		return 1;
 	}
 
+	//bind to port for any interface
+	addr.sin_addr.s_addr = INADDR_ANY;
+	addr.sin_family		 = AF_INET;
+	addr.sin_port		 = htons(SERVER_PORT);
+
+	if (bind(sockfd, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
+		perror("Could not bind socket");
+		close(sockfd);
+		return 1;
+	}
+	
+	//listen for incoming connections
+	if (listen(sockfd, SERVER_BACKLOG) == -1) {
+		perror("Could not listen");
+		return 1;
+	}
+
+	//accept (blocks until a client connects)
+	while(1) {
+		connfd = accept(sockfd, (struct sockaddr *) &cliaddr, &cliaddrlen);
+		if (connfd == -1) {
+			perror("Accept failed");
+			close(sockfd);
+			return 1;
+		} else {
+			handle_connection(connfd);
+		}
+	}
 	close(sockfd);
 }
 
-char *dynamic_strcat(char *s1, char *s2) {
-	char *result;
-   	if (!(result = malloc(strlen(s1) + strlen(s2) + 1))) {
-		errlog("malloc failed");
-		return NULL;
-	}
-	result[0] = '\0';
-	strcat(result, s1);
-	strcat(result, s2);
-	return result;
-}
 
 /* connection handler. reads from given socket descriptor, parses input stream, and sends responses. */
-void handle_connection(int fd){
+void handle_connection(int fd) {
 	const char EOR[] = "\r\n\r\n";
 	unsigned int EOR_match;
-	int count, i, ri;
-	char buf[BUFFER_SIZE], req_buf[BUFFER_SIZE];
-	char *request, *temp;
+	int count, i;
+	char buf[BUFFER_SIZE];
+	char *request_string;	
+	lsb request;
+	int start_reading;
 
-	EOR_match = 0;
+	request = NULL;
 	while ((count = read(fd, &buf, BUFFER_SIZE - 1)) > 0) {
+		buf[count] = '\0';
+
+		start_reading = 0;
+
 		/* check for end of request */
-		ri = 0;
 		for (i = 0; i < count; i++) {
+			if (request == NULL) {
+				/* start a new buffer for the next request. */
+				request = lsb_create();
+				lsb_add(request, &buf[i]);	
+				EOR_match = 0;
+			}
+			
 			if (buf[i] == EOR[EOR_match]) {
 				EOR_match++;
 				if (EOR_match == strlen(EOR)) {
-					/* found end of request */
-					temp = request;
-					req_buf[ri] = '\0';
-					request = dynamic_strcat(request, req_buf);
-					
-					handle_request(fd, request);
-				
-					free(temp);
-					EOR_match = 0;
-					ri = 0;
+					/* send request, including current buffer, to be handled. */
+					lsb_add(request, &buf[start_reading]);
+					request_string = lsb_string(request);
+					handle_request(fd, request_string);
+					free(request_string);
+					lsb_destroy(request);
+					request = NULL;
+					start_reading = i + 1; //so that next request start with first character after EOR		
 				}
 			} else {
 				EOR_match = 0;
-				req_buf[ri++] = buf[i];
 			}
 		}
+//TODO ERROR CHECK ALL THIS!
+		if (start_reading < count) {
+			lsb_add(request, &buf[start_reading]);
+		}
 	}
+
 	if (count == -1) {
 		errlog(strerror(errno));
 	}
+
+	lsb_destroy(request);
+}
+
+void http_headers(int fd, int status, int content_type, int content_length) {
+	char buf[1024];
+
+	sprintf(buf, "HTTP/1.1 %i OK\r\n", status);
+	/* TODO handle error codes with correct status description (e.g. 404 Not Found) */
+	write(fd, buf, strlen(buf));
+	
+	sprintf(buf, "Content-Type: %s\r\n", "text/plain");
+	write(fd, buf, strlen(buf));
+
+	sprintf(buf, "Content-Length: %i\r\n", content_length);
+	write(fd, buf, strlen(buf));
+
+	sprintf(buf, "Connection: close\r\n");
+	write(fd, buf, strlen(buf));
+	
+	sprintf(buf, "\r\n");
+	write(fd, buf, strlen(buf));
+
+
+}
+
+
+/* handle a single request, parsing the given string until EOR (\r\n\r\n) and ignoring any data after that. */
+void handle_request(int fd, char *request) {
+	char buf[1024];
+
+	fprintf(stderr, "parsing request:\n%s\n", request);
+
+	
+	
+	sprintf(buf, "It Works");
+	
+	http_headers(fd, 200, strlen(buf), 0);
+
+	write(fd, buf, strlen(buf));
 }
