@@ -135,8 +135,8 @@ void http_headers(int fd, int status, int content_type, int content_length) {
 	sprintf(buf, "Content-Length: %i\r\n", content_length);
 	write(fd, buf, strlen(buf));
 
-	sprintf(buf, "Connection: close\r\n");
-	write(fd, buf, strlen(buf));
+	//sprintf(buf, "Connection: close\r\n");
+	//write(fd, buf, strlen(buf));
 	
 	sprintf(buf, "\r\n");
 	write(fd, buf, strlen(buf));
