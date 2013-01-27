@@ -14,6 +14,10 @@ struct lsb_struct {
 };
 
 void lsb_node_destroy(struct lsb_node *node){
+	if (node == NULL) {
+		return;
+	}
+	 
 	free(node->s);
 	free(node);
 }
@@ -40,6 +44,11 @@ lsb lsb_create(void){
 void lsb_destroy(lsb l) {
 	struct lsb_node *prev;
 	struct lsb_node *node = l->head;
+	
+	if (l == NULL) {
+		return;
+	}
+
 	while (node != NULL) {
 		prev = node;
 		node = node->next;
