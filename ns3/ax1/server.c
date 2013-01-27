@@ -73,7 +73,11 @@ void handle_connection(int fd) {
 	lsb request;
 	int start_reading;
 
-	request = NULL;
+	errlog("Accepted connection");
+
+	request = lsb_create();
+	EOR_match = 0;
+	
 	while ((count = read(fd, &buf, BUFFER_SIZE - 1)) > 0) {
 		buf[count] = '\0';
 
@@ -81,39 +85,40 @@ void handle_connection(int fd) {
 
 		/* check for end of request */
 		for (i = 0; i < count; i++) {
-			if (request == NULL) {
-				/* start a new buffer for the next request. */
-				request = lsb_create();
-				lsb_add(request, &buf[i]);	
-				EOR_match = 0;
-			}
-			
 			if (buf[i] == EOR[EOR_match]) {
 				EOR_match++;
-				if (EOR_match == strlen(EOR)) {
-					/* send request, including current buffer, to be handled. */
-					lsb_add(request, &buf[start_reading]);
-					request_string = lsb_string(request);
-					handle_request(fd, request_string);
-					free(request_string);
-					lsb_destroy(request);
-					request = NULL;
-					start_reading = i + 1; //so that next request start with first character after EOR		
-				}
 			} else {
 				EOR_match = 0;
 			}
+
+			if (EOR_match == strlen(EOR)) {
+				errlog("matched end of request");
+				EOR_match = 0;
+				
+				/* send request, including current buffer, to be handled. */
+				lsb_add(request, &buf[start_reading]);
+				
+				request_string = lsb_string(request);
+				handle_request(fd, request_string);
+				free(request_string);
+				lsb_destroy(request);
+				
+				/* reset for next request */
+				start_reading = i + 1; 
+				request = lsb_create();
+			}
 		}
-//TODO ERROR CHECK ALL THIS!
-		if (start_reading < count) {
-			lsb_add(request, &buf[start_reading]);
-		}
+
+		lsb_add(request, &buf[start_reading]);
 	}
 
 	if (count == -1) {
 		errlog(strerror(errno));
 	}
 
+
+	errlog("Closing connection.");
+	close(fd);
 	lsb_destroy(request);
 }
 
@@ -150,7 +155,7 @@ void handle_request(int fd, char *request) {
 	
 	sprintf(buf, "It Works");
 	
-	http_headers(fd, 200, strlen(buf), 0);
+	http_headers(fd, 200, 0, strlen(buf));
 
 	write(fd, buf, strlen(buf));
 }
