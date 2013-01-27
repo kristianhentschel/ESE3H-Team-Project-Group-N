@@ -73,19 +73,25 @@ char *lsb_string(lsb l) {
 }
 
 /* adds another \0 delimited string to the buffer, copying it into a malloc'd string. */
-void lsb_add(lsb l, const char **s) {
+void lsb_add(lsb l, const char *s) {
 	int size;
 	struct lsb_node *node;
 
 	node = lsb_node_create();
 
-	size = strlen(*s) + 1;
+	size = strlen(s) + 1;
 	node->s = malloc(size);
-	strlcpy(node->s, *s, size);
+	strlcpy(node->s, s, size);
 
 	l->size += size - 1;
-	l->tail->next = node;
-	l->tail = node;	
+	
+	if (l->tail == NULL) {
+		l->head = node;
+	} else {
+		l->tail->next = node;
+	}
+	
+	l->tail = node;
 }
 
 

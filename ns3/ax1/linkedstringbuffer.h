@@ -13,7 +13,7 @@ void lsb_destroy(lsb l);
 char *lsb_string(lsb l);
 
 /* adds another \0 delimited string to the buffer, copying it into a malloc'd string. */
-void lsb_add(lsb l, const char **s);
+void lsb_add(lsb l, const char *s);
 
 #endif /* __LINKEDSTRINGBUFFER_H__ */
 
