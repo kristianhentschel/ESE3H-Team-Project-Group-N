@@ -7,6 +7,10 @@
 #include <string.h>
 #include <ctype.h>
 #include <errno.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+
 
 #define SERVER_PORT 8080
 #define SERVER_BACKLOG 16
@@ -144,18 +148,80 @@ void http_headers(int fd, int status, int content_type, int content_length) {
 
 }
 
+int host_match(const char *host) {
+	return 1;
+}
+
+long file_size(const char *path){
+	struct stat s;
+
+
+	//TODO potential security issue: path may start with .. or / and access system files with permissions of webserver user.
+	if( stat(path, &s) != 0) {
+		return -1L;
+	} else {
+		return s.st_size;
+	}
+}
+
+enum http_mime { MIME_TEXT_PLAIN, MIME_TEXT_HTML, MIME_IMAGE_JPEG, MIME_IMAGE_GIF, MIME_APPLICATION_OCTET_STREAM};
+enum http_status {HTTP_OK = 200, HTTP_NOT_FOUND = 404, HTTP_BAD_REQUEST = 400, HTTP_INTERNAL_SERVER_ERROR = 500};
 
 /* handle a single request, parsing the given string until EOR (\r\n\r\n) and ignoring any data after that. */
 void handle_request(int fd, char *request) {
-	char buf[1024];
+	char *response;
+	char path[1024]; //TODO #define
+	long content_length = 0;
+	enum http_status status = HTTP_OK;
+	enum http_mime mime = MIME_TEXT_PLAIN;
 
 	fprintf(stderr, "parsing request:\n%s\n", request);
 
-	
-	
-	sprintf(buf, "It Works");
-	
-	http_headers(fd, 200, 0, strlen(buf));
+	/* parse request data */
 
-	write(fd, buf, strlen(buf));
+	if( sscanf(request, "GET /%1023s HTTP/1.1", path) != 1 ) {
+		/* we only support GET, so might as well hard code it... */
+		status = HTTP_BAD_REQUEST;
+		errlog("request does not match GET /%as HTTP/1.1");
+	} else if (!host_match(request)) {
+		/* unknown host */
+		status = HTTP_INTERNAL_SERVER_ERROR;	
+	} else if ((content_length = file_size(path)) < 0) {
+		status = HTTP_NOT_FOUND;
+	} else {
+		status = HTTP_OK;
+	}
+
+	/* send response */
+	response = "";
+	switch(status) {
+		case HTTP_OK:
+			break;
+		case HTTP_NOT_FOUND:
+			response = "<html><body><h1>404 File  not found</h1></body></html>";
+			break;
+		case HTTP_BAD_REQUEST:
+			response = "<html><body><h1>400 bad request</h1></body></html>";
+			break;
+		default: //Internal server error
+			status = HTTP_INTERNAL_SERVER_ERROR;
+			response = "<html><body><h1>500 internal server error</h1></body></html>";
+			break;
+	}
+	
+	http_headers(fd, status, mime, content_length);
+	
+	if (status == HTTP_OK) {
+		char writebuf[1024];//TODO #define this
+		FILE *docfd = fopen(path, "r");
+		int count;
+
+		while ( (count = fread(writebuf, 1, 1024, docfd) > 0 ) ) {
+			write(fd, writebuf, count);
+		}
+
+		fclose(docfd);
+	} else {
+		write(fd, response, strlen(response));
+	}
 }
