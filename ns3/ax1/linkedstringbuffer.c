@@ -66,7 +66,7 @@ char *lsb_string(lsb l) {
 	result[0] = '\0';
 	
 	for (node = l->head; node != NULL; node = node->next) {
-		strlcat(result, node->s, l->size + 1);
+		strcat(result, node->s);
 	}
 
 	return result;
@@ -81,7 +81,7 @@ void lsb_add(lsb l, const char *s) {
 
 	size = strlen(s) + 1;
 	node->s = malloc(size);
-	strlcpy(node->s, s, size);
+	strcpy(node->s, s);
 
 	l->size += size - 1;
 	
