@@ -62,5 +62,46 @@ void destroyFSM(FSM f) {
 
 
 int allocate(FSM f, unsigned long number, unsigned long *first) {
-	return 0;
+	struct hole *p;
+
+
+	p = ((struct fsm *)f)->first;
+
+	while (p != NULL && p->size < number) {
+		p = p->next;
+	}
+
+	if (p == NULL) {
+		return 0;
+	} else {
+		*first = p->start;
+		
+		
+		p->start += number;
+		p->size  -= number;
+
+		return 1;
+	}
+}
+
+void deallocate(FSM f, unsigned long first, unsigned long number) {
+	struct hole *p, *prev;
+
+
+	p = (struct fsm *)f->first;
+	prev = NULL;
+
+	while (p != NULL) {
+		if (p->start > first) {
+			
+			
+			return;
+		}
+		
+		prev = p;
+		p = p->next;
+	}
+
+	/* p is NULL. */
+
 }
