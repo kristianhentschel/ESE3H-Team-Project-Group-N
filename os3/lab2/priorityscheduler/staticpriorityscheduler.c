@@ -42,7 +42,8 @@ void add_runnable_TCB(TCB *t) {
 	gqueue_enqueue(ready_queues[index], (GQueueElement) t);
 	
 	/* system is idle and the new task could  be scheduled immediately. */
-	if (state == IDLE) {
+	/* TODO task with higher priority should preempt running task. */
+	if (state == IDLE || get_static_priority(t) > get_static_priority(current_task)) {
 		scheduler();
 	}
 	fprintf(stderr, "Scheduler: Added runnable TCB to queue %d\n", index);
