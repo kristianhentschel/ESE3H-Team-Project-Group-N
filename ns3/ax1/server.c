@@ -19,6 +19,9 @@
 void handle_connection(int fd);
 void handle_request(int fd, char *request);
 
+enum http_mime { MIME_TEXT_PLAIN, MIME_TEXT_HTML, MIME_IMAGE_JPEG, MIME_IMAGE_GIF, MIME_IMAGE_PNG, MIME_APPLICATION_OCTET_STREAM};
+enum http_status {HTTP_OK = 200, HTTP_NOT_FOUND = 404, HTTP_BAD_REQUEST = 400, HTTP_INTERNAL_SERVER_ERROR = 500};
+
 void errlog(char *msg) {
 	fprintf(stderr, "%s\n", msg);
 }
@@ -128,12 +131,20 @@ void handle_connection(int fd) {
 
 void http_headers(int fd, int status, int content_type, int content_length) {
 	char buf[1024];
+	char *content_types[sizeof(enum http_mime)];
+	content_types[MIME_TEXT_HTML] = "text/html";
+	content_types[MIME_TEXT_PLAIN] = "text/plain";
 
 	sprintf(buf, "HTTP/1.1 %i OK\r\n", status);
 	/* TODO handle error codes with correct status description (e.g. 404 Not Found) */
 	write(fd, buf, strlen(buf));
 	
-	sprintf(buf, "Content-Type: %s\r\n", "text/plain");
+	
+
+	
+	sprintf(buf, "Content-Type: %s\r\n", content_types[content_type]);
+	
+	
 	write(fd, buf, strlen(buf));
 
 	sprintf(buf, "Content-Length: %i\r\n", content_length);
@@ -155,7 +166,6 @@ int host_match(const char *host) {
 long file_size(const char *path){
 	struct stat s;
 
-
 	//TODO potential security issue: path may start with .. or / and access system files with permissions of webserver user.
 	if( stat(path, &s) != 0) {
 		return -1L;
@@ -164,32 +174,61 @@ long file_size(const char *path){
 	}
 }
 
-enum http_mime { MIME_TEXT_PLAIN, MIME_TEXT_HTML, MIME_IMAGE_JPEG, MIME_IMAGE_GIF, MIME_APPLICATION_OCTET_STREAM};
-enum http_status {HTTP_OK = 200, HTTP_NOT_FOUND = 404, HTTP_BAD_REQUEST = 400, HTTP_INTERNAL_SERVER_ERROR = 500};
 
+
+/* guarantee that path is always \0 terminated. */
+enum http_mime file_mime(char *path){
+	char *c, *ext;
+	
+	for (c = path; *c != '\0'; c++) {
+		if (*c == '.') {
+			ext = c + 1;
+		}
+	}
+
+	errlog(ext);
+
+	if (strcasecmp(c, "txt") == 0){
+		return MIME_TEXT_PLAIN;
+	} else if (strcasecmp(c, "htm") == 0 || strcasecmp(c, "html")) {
+		return MIME_TEXT_HTML;
+	} else if (strcasecmp(c, "jpg") == 0 || strcasecmp(c, "jpeg")) {
+		return MIME_IMAGE_JPEG;
+	} else if (strcasecmp(c, "gif") == 0) {
+		return MIME_IMAGE_GIF;
+	} else if (strcasecmp(c, "png") == 0) {
+		return MIME_IMAGE_PNG;
+	} else {
+		return MIME_APPLICATION_OCTET_STREAM;
+	}
+}
 /* handle a single request, parsing the given string until EOR (\r\n\r\n) and ignoring any data after that. */
 void handle_request(int fd, char *request) {
 	char *response;
 	char path[1024]; //TODO #define
 	long content_length = 0;
 	enum http_status status = HTTP_OK;
-	enum http_mime mime = MIME_TEXT_PLAIN;
+	enum http_mime mime = MIME_TEXT_HTML;
 
 	fprintf(stderr, "parsing request:\n%s\n", request);
 
 	/* parse request data */
 
-	if( sscanf(request, "GET /%1023s HTTP/1.1", path) != 1 ) {
+	if( sscanf(request, "GET /%10s HTTP/1.1", path) != 1 ) {
 		/* we only support GET, so might as well hard code it... */
 		status = HTTP_BAD_REQUEST;
 		errlog("request does not match GET /%as HTTP/1.1");
 	} else if (!host_match(request)) {
 		/* unknown host */
+		errlog("unknown host");
 		status = HTTP_INTERNAL_SERVER_ERROR;	
 	} else if ((content_length = file_size(path)) < 0) {
+		errlog("file not found");
 		status = HTTP_NOT_FOUND;
 	} else {
+		errlog("file found");
 		status = HTTP_OK;
+		mime = file_mime(path);
 	}
 
 	/* send response */
@@ -213,10 +252,17 @@ void handle_request(int fd, char *request) {
 	
 	if (status == HTTP_OK) {
 		char writebuf[1024];//TODO #define this
-		FILE *docfd = fopen(path, "r");
-		int count;
+		FILE *docfd;
+		ssize_t count;
 
-		while ( (count = fread(writebuf, 1, 1024, docfd) > 0 ) ) {
+		docfd = fopen(path, "r");
+
+		if(docfd == NULL) {
+			errlog("could not open file");
+		}
+
+		while ( (count = fread(writebuf, 1, 1024, docfd)) > 0) {
+			errlog("writing file to connection.");
 			write(fd, writebuf, count);
 		}
 
