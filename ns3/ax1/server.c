@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
+#include <signal.h>
 
 
 #define SERVER_PORT 8080
