@@ -132,8 +132,11 @@ void handle_connection(int fd) {
 void http_headers(int fd, int status, int content_type, int content_length) {
 	char buf[1024];
 	char *content_types[sizeof(enum http_mime)];
-	content_types[MIME_TEXT_HTML] = "text/html";
 	content_types[MIME_TEXT_PLAIN] = "text/plain";
+	content_types[MIME_TEXT_HTML]  = "text/html";
+	content_types[MIME_IMAGE_GIF]  = "text/gif";
+	content_types[MIME_IMAGE_PNG]  = "text/png";
+	content_types[MIME_IMAGE_JPEG] = "text/jpeg";
 
 	sprintf(buf, "HTTP/1.1 %i OK\r\n", status);
 	/* TODO handle error codes with correct status description (e.g. 404 Not Found) */
@@ -259,13 +262,12 @@ void handle_request(int fd, char *request) {
 
 		if(docfd == NULL) {
 			errlog("could not open file");
+		} else {
+			while ( (count = fread(writebuf, 1, 1024, docfd)) > 0) {
+				errlog("writing file to connection.");
+				write(fd, writebuf, count);
+			}
 		}
-
-		while ( (count = fread(writebuf, 1, 1024, docfd)) > 0) {
-			errlog("writing file to connection.");
-			write(fd, writebuf, count);
-		}
-
 		fclose(docfd);
 	} else {
 		write(fd, response, strlen(response));
