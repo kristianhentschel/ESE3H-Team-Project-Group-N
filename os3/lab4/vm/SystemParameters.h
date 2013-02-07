@@ -11,15 +11,15 @@
 
 #ifdef SIMPLIFY_VMPROBLEM
 
-/* Can reduce the volume of our datatsructures by reducing parameters */
+/* Can reduce the volume of our datastructures by reducing parameters */
 
 #define MAX_PROCESSES                   6
 #define MAX_THREADS                    15
-#define PAGE_SIZE                      64
+#define PAGE_SIZE                      512
 #define BYTES_IN_ADDRESSABLE_LOCATION   4
-#define MAX_PAGES                      75
+#define MAX_PAGES                      1024
 #define MIN_PHYSICAL_MEMORY             1
-#define MAX_PHYSICAL_MEMORY            24
+#define MAX_PHYSICAL_MEMORY            1024
 
 #else
 
@@ -46,7 +46,7 @@
  */
 
 #define MIN_PHYSICAL_MEMORY    1
-#define MAX_PHYSICAL_MEMORY (512*1024)
+#define MAX_PHYSICAL_MEMORY (512)
 
 #endif
 
