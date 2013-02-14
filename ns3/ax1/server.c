@@ -67,6 +67,7 @@ int main(void) {
 		}
 	}
 	close(sockfd);
+	return 0;
 }
 
 
@@ -129,7 +130,7 @@ void handle_connection(int fd) {
 	lsb_destroy(request);
 }
 
-void http_headers(int fd, int status, int content_type, int content_length) {
+void http_headers(int fd, int status, char *status_str, int content_type, int content_length) {
 	char buf[1024];
 	char *content_types[sizeof(enum http_mime)];
 	content_types[MIME_TEXT_PLAIN] = "text/plain";
@@ -138,12 +139,8 @@ void http_headers(int fd, int status, int content_type, int content_length) {
 	content_types[MIME_IMAGE_PNG]  = "text/png";
 	content_types[MIME_IMAGE_JPEG] = "text/jpeg";
 
-	sprintf(buf, "HTTP/1.1 %i OK\r\n", status);
-	/* TODO handle error codes with correct status description (e.g. 404 Not Found) */
+	sprintf(buf, "HTTP/1.1 %i %s\r\n", status, status_str);
 	write(fd, buf, strlen(buf));
-	
-	
-
 	
 	sprintf(buf, "Content-Type: %s\r\n", content_types[content_type]);
 	
@@ -163,6 +160,7 @@ void http_headers(int fd, int status, int content_type, int content_length) {
 }
 
 int host_match(const char *host) {
+	//TODO
 	return 1;
 }
 
@@ -179,7 +177,8 @@ long file_size(const char *path){
 
 
 
-/* guarantee that path is always \0 terminated. */
+/* get the mime type based on path/file name extension.
+ * user must guarantee that path is always \0 terminated. */
 enum http_mime file_mime(char *path){
 	char *c, *ext;
 	
@@ -205,9 +204,37 @@ enum http_mime file_mime(char *path){
 		return MIME_APPLICATION_OCTET_STREAM;
 	}
 }
+
+/* write a string to the file descriptor */
+void respond_string(int fd, char *response) {
+	errlog("responding with string");
+	write(fd, response, strlen(response));
+}
+
+/* write a file to the connection file descriptor */
+void respond_file(int fd, char *path) {
+	char writebuf[1024];//TODO #define this
+	FILE *docfd;
+	ssize_t count;
+
+	docfd = fopen(path, "r");
+
+	if(docfd == NULL) {
+		errlog("could not open file");
+	} else {
+		while ( (count = fread(writebuf, 1, sizeof(writebuf), docfd)) > 0) {
+			write(fd, writebuf, count);
+			fprintf(stderr, "%lu ", count);
+			errlog("bytes written from file.");
+		}
+	}
+	fclose(docfd);
+	errlog("file written completely.");
+}
+
 /* handle a single request, parsing the given string until EOR (\r\n\r\n) and ignoring any data after that. */
 void handle_request(int fd, char *request) {
-	char *response;
+	char *response, *status_str;
 	char path[1024]; //TODO #define
 	long content_length = 0;
 	enum http_status status = HTTP_OK;
@@ -217,7 +244,7 @@ void handle_request(int fd, char *request) {
 
 	/* parse request data */
 
-	if( sscanf(request, "GET /%10s HTTP/1.1", path) != 1 ) {
+	if( sscanf(request, "GET /%100s HTTP/1.1", path) != 1 ) {
 		/* we only support GET, so might as well hard code it... */
 		status = HTTP_BAD_REQUEST;
 		errlog("request does not match GET /%as HTTP/1.1");
@@ -229,47 +256,44 @@ void handle_request(int fd, char *request) {
 		errlog("file not found");
 		status = HTTP_NOT_FOUND;
 	} else {
-		errlog("file found");
+		errlog("sending file found");
 		status = HTTP_OK;
 		mime = file_mime(path);
 	}
 
-	/* send response */
+	/* handle http status codes */
 	response = "";
+	status_str = "";
 	switch(status) {
 		case HTTP_OK:
+			status_str = "OK";
 			break;
 		case HTTP_NOT_FOUND:
+			status_str = "Not Found";
 			response = "<html><body><h1>404 File  not found</h1></body></html>";
 			break;
 		case HTTP_BAD_REQUEST:
+			status_str = "Bad Request";
 			response = "<html><body><h1>400 bad request</h1></body></html>";
 			break;
 		default: //Internal server error
+			status_str = "Internal Server Error";
 			status = HTTP_INTERNAL_SERVER_ERROR;
 			response = "<html><body><h1>500 internal server error</h1></body></html>";
 			break;
 	}
-	
-	http_headers(fd, status, mime, content_length);
-	
-	if (status == HTTP_OK) {
-		char writebuf[1024];//TODO #define this
-		FILE *docfd;
-		ssize_t count;
 
-		docfd = fopen(path, "r");
-
-		if(docfd == NULL) {
-			errlog("could not open file");
-		} else {
-			while ( (count = fread(writebuf, 1, 1024, docfd)) > 0) {
-				errlog("writing file to connection.");
-				write(fd, writebuf, count);
-			}
-		}
-		fclose(docfd);
-	} else {
-		write(fd, response, strlen(response));
+	if (status != HTTP_OK) {
+		content_length = strlen(response);
 	}
+
+	http_headers(fd, status, status_str, mime, content_length);
+
+	if (status == HTTP_OK) {
+		respond_file(fd, path);
+	} else {
+		respond_string(fd, response);
+	}
+
+	errlog("--- request handling complete ---");
 }
