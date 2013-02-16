@@ -159,18 +159,33 @@ void http_headers(int fd, int status, char *status_str, int content_type, int co
 
 }
 
+/* check if the given request host matches any of this servers' hostnames
+ * TODO strip out port number in *host
+ */
 int host_match(const char *host) {
-	//TODO
-	return 1;
+	char hostname[1024], hostreq[1024];
+
+	strncpy(hostreq, host, sizeof(hostreq));
+
+	if (strchr(hostreq, ':')) {
+		*strchr(hostreq, ':') = '\0';
+	}
+
+	gethostname(hostname, sizeof(hostname));
+
+	return (strcmp(hostreq, hostname) == 0
+			|| strcmp(hostreq, strcat(hostname, ".dcs.gla.ac.uk")) == 0
+			|| strcmp(hostreq, "localhost") == 0);
 }
 
+/* returns the file size or -1 if the file is not accessible */
 long file_size(const char *path){
 	struct stat s;
 
-	//TODO potential security issue: path may start with .. or / and access system files with permissions of webserver user.
 	if( stat(path, &s) != 0) {
 		return -1L;
 	} else {
+
 		return s.st_size;
 	}
 }
@@ -211,7 +226,9 @@ void respond_string(int fd, char *response) {
 	write(fd, response, strlen(response));
 }
 
-/* write a file to the connection file descriptor */
+/* write a file to the connection file descriptor
+ * TODO error checking for write system call, as client may close socket unexpectedly. Also, catch or block SIGPIPE signal when doing this.
+ */
 void respond_file(int fd, char *path) {
 	char writebuf[1024];//TODO #define this
 	FILE *docfd;
@@ -232,10 +249,12 @@ void respond_file(int fd, char *path) {
 	errlog("file written completely.");
 }
 
-/* handle a single request, parsing the given string until EOR (\r\n\r\n) and ignoring any data after that. */
+/* handle a single request, parsing the given string until EOR (\r\n\r\n) and ignoring any data after that.
+ * Handles paths of up to 1023 characters.
+ */ 
 void handle_request(int fd, char *request) {
 	char *response, *status_str;
-	char path[1024]; //TODO #define
+	char path[1024]; 
 	long content_length = 0;
 	enum http_status status = HTTP_OK;
 	enum http_mime mime = MIME_TEXT_HTML;
@@ -244,19 +263,24 @@ void handle_request(int fd, char *request) {
 
 	/* parse request data */
 
-	if( sscanf(request, "GET /%100s HTTP/1.1", path) != 1 ) {
+	if( sscanf(request, "GET /%1023s HTTP/1.1", path) != 1 ) {
 		/* we only support GET, so might as well hard code it... */
 		status = HTTP_BAD_REQUEST;
 		errlog("request does not match GET /%as HTTP/1.1");
 	} else if (!host_match(request)) {
 		/* unknown host */
 		errlog("unknown host");
-		status = HTTP_INTERNAL_SERVER_ERROR;	
+		status = HTTP_BAD_REQUEST;	
+	} else if (path[0] == '.' || path[0] == '/') {
+		/* path definitely outside document root. */
+		errlog("invalid path, cannot start with . or /");
+		status = HTTP_BAD_REQUEST;
 	} else if ((content_length = file_size(path)) < 0) {
+		/* file not found or un-stat-able */
 		errlog("file not found");
 		status = HTTP_NOT_FOUND;
 	} else {
-		errlog("sending file found");
+		errlog("file found"); 
 		status = HTTP_OK;
 		mime = file_mime(path);
 	}
