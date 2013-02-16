@@ -25,7 +25,7 @@ enum http_status {HTTP_OK = 200, HTTP_NOT_FOUND = 404, HTTP_BAD_REQUEST = 400, H
 
 static pthread_mutex_t mutex_stdio = PTHREAD_MUTEX_INITIALIZER;
 
-void errlog(char *msg) {
+void errlog(const char *msg) {
 	
 	pthread_mutex_lock(&mutex_stdio);
 	fprintf(stderr, "%s\n", msg);
@@ -180,12 +180,11 @@ void http_headers(int fd, int status, char *status_str, int content_type, int co
 }
 
 /* check if the given request host matches any of this servers' hostnames
- * TODO strip out port number in *host
  */
-int host_match(const char *host) {
+int host_match(const char *request) {
 	char hostname[1024], hostreq[1024];
 
-	strncpy(hostreq, host, sizeof(hostreq));
+	sscanf(strstr(request, "Host"), "Host: %1023s", hostreq);
 
 	if (strchr(hostreq, ':')) {
 		*strchr(hostreq, ':') = '\0';
@@ -289,7 +288,7 @@ void handle_request(int fd, char *request) {
 		errlog("request does not match GET /%as HTTP/1.1");
 	} else if (!host_match(request)) {
 		/* unknown host */
-		errlog("unknown host");
+		errlog("hostname does not match");
 		status = HTTP_BAD_REQUEST;	
 	} else if (path[0] == '.' || path[0] == '/') {
 		/* path definitely outside document root. */
