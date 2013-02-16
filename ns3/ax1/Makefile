@@ -1,4 +1,4 @@
-CFLAGS = -W -Wall -g
+CFLAGS = -W -Wall -Werror -pedantic -lpthread -g
 CC = gcc
 
 all: server
