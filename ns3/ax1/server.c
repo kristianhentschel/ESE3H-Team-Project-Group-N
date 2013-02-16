@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <signal.h>
 
+#include <pthread.h>
 
 #define SERVER_PORT 8080
 #define SERVER_BACKLOG 16
@@ -22,14 +23,27 @@ void handle_request(int fd, char *request);
 enum http_mime { MIME_TEXT_PLAIN, MIME_TEXT_HTML, MIME_IMAGE_JPEG, MIME_IMAGE_GIF, MIME_IMAGE_PNG, MIME_APPLICATION_OCTET_STREAM};
 enum http_status {HTTP_OK = 200, HTTP_NOT_FOUND = 404, HTTP_BAD_REQUEST = 400, HTTP_INTERNAL_SERVER_ERROR = 500};
 
+static pthread_mutex_t mutex_stdio = PTHREAD_MUTEX_INITIALIZER;
+
 void errlog(char *msg) {
+	
+	pthread_mutex_lock(&mutex_stdio);
 	fprintf(stderr, "%s\n", msg);
+	pthread_mutex_unlock(&mutex_stdio);
+}
+
+void *worker_thread( void *connfd ) {
+	handle_connection(*(int *) connfd);
+	pthread_exit(0);
+	return NULL;
 }
 
 int main(void) {
 	int 				sockfd, connfd;
 	struct sockaddr_in	addr, cliaddr;
 	socklen_t			cliaddrlen = sizeof(cliaddr);
+
+	/* set up all shared data structures for threading */
 
 	//allocate a socket
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -63,10 +77,16 @@ int main(void) {
 			close(sockfd);
 			return 1;
 		} else {
-			handle_connection(connfd);
+			pthread_t thread;
+			pthread_create(&thread, NULL, worker_thread, (void *) &connfd);
 		}
 	}
 	close(sockfd);
+	
+	/* free shared data structures */
+	pthread_mutex_lock(&mutex_stdio);
+	pthread_mutex_destroy(&mutex_stdio);
+
 	return 0;
 }
 
