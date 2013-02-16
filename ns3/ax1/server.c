@@ -33,8 +33,11 @@ void errlog(char *msg) {
 }
 
 void *worker_thread( void *connfd ) {
+	fprintf(stderr, "Started new thread #%lu\n", pthread_self());
+	
 	handle_connection(*(int *) connfd);
 	pthread_exit(0);
+
 	return NULL;
 }
 
@@ -45,14 +48,14 @@ int main(void) {
 
 	/* set up all shared data structures for threading */
 
-	//allocate a socket
+	/* allocate a socket */
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if (sockfd == -1) {
 		perror("Could not create socket");
 		return 1;
 	}
 
-	//bind to port for any interface
+	/* bind to port for any interface */
 	addr.sin_addr.s_addr = INADDR_ANY;
 	addr.sin_family		 = AF_INET;
 	addr.sin_port		 = htons(SERVER_PORT);
@@ -63,13 +66,13 @@ int main(void) {
 		return 1;
 	}
 	
-	//listen for incoming connections
+	/* listen for incoming connections */
 	if (listen(sockfd, SERVER_BACKLOG) == -1) {
 		perror("Could not listen");
 		return 1;
 	}
 
-	//accept (blocks until a client connects)
+	/* accept (blocks until a client connects) */
 	while(1) {
 		connfd = accept(sockfd, (struct sockaddr *) &cliaddr, &cliaddrlen);
 		if (connfd == -1) {
@@ -170,9 +173,6 @@ void http_headers(int fd, int status, char *status_str, int content_type, int co
 	sprintf(buf, "Content-Length: %i\r\n", content_length);
 	write(fd, buf, strlen(buf));
 
-	//sprintf(buf, "Connection: close\r\n");
-	//write(fd, buf, strlen(buf));
-	
 	sprintf(buf, "\r\n");
 	write(fd, buf, strlen(buf));
 
@@ -250,7 +250,7 @@ void respond_string(int fd, char *response) {
  * TODO error checking for write system call, as client may close socket unexpectedly. Also, catch or block SIGPIPE signal when doing this.
  */
 void respond_file(int fd, char *path) {
-	char writebuf[1024];//TODO #define this
+	char writebuf[1024]; /* TODO #define this*/
 	FILE *docfd;
 	ssize_t count;
 
@@ -320,7 +320,7 @@ void handle_request(int fd, char *request) {
 			status_str = "Bad Request";
 			response = "<html><body><h1>400 bad request</h1></body></html>";
 			break;
-		default: //Internal server error
+		default: /* Internal server error */
 			status_str = "Internal Server Error";
 			status = HTTP_INTERNAL_SERVER_ERROR;
 			response = "<html><body><h1>500 internal server error</h1></body></html>";
