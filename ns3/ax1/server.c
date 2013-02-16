@@ -14,7 +14,7 @@
 
 #define SERVER_PORT 8080
 #define SERVER_BACKLOG 16
-#define BUFFER_SIZE 64
+#define REQUEST_BUFFER_SIZE 64
 
 void handle_connection(int fd);
 void handle_request(int fd, char *request);
@@ -76,7 +76,7 @@ void handle_connection(int fd) {
 	const char EOR[] = "\r\n\r\n";
 	unsigned int EOR_match;
 	int count, i;
-	char buf[BUFFER_SIZE];
+	char buf[REQUEST_BUFFER_SIZE];
 	char *request_string;	
 	lsb request;
 	int start_reading;
@@ -86,7 +86,7 @@ void handle_connection(int fd) {
 	request = lsb_create();
 	EOR_match = 0;
 	
-	while ((count = read(fd, &buf, BUFFER_SIZE - 1)) > 0) {
+	while ((count = read(fd, &buf, REQUEST_BUFFER_SIZE - 1)) > 0) {
 		buf[count] = '\0';
 
 		start_reading = 0;
