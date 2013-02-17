@@ -15,10 +15,10 @@
 #include <pthread.h>
 
 #define SERVER_PORT 8080
-#define SERVER_BACKLOG 16
+#define SERVER_BACKLOG 0 
 #define REQUEST_BUFFER_SIZE 64
 #define NTHREADS 4
-#define WORK_BUFFER_SIZE 10
+#define WORK_BUFFER_SIZE 1 
 
 static int SERVER_RUNNING;
 
@@ -266,7 +266,7 @@ void respond_string(int fd, char *response) {
  * TODO error checking for write system call, as client may close socket unexpectedly. Also, catch or block SIGPIPE signal when doing this.
  */
 void respond_file(int fd, char *path) {
-	char writebuf[1024]; /* TODO #define this*/
+	char writebuf[1024*1024]; /* TODO #define this*/
 	FILE *docfd;
 	ssize_t count;
 
@@ -295,7 +295,6 @@ void handle_request(int fd, char *request) {
 	enum http_status status = HTTP_OK;
 	enum http_mime mime = MIME_TEXT_HTML;
 
-	fprintf(stderr, "parsing request:\n%s\n", request);
 
 	/* parse request data */
 
@@ -316,7 +315,7 @@ void handle_request(int fd, char *request) {
 		errlog("file not found");
 		status = HTTP_NOT_FOUND;
 	} else {
-		errlog("file found"); 
+		printf("--- Thread %lu serving request for %s.\n", pthread_self() % 1000, path);
 		status = HTTP_OK;
 		mime = file_mime(path);
 	}
@@ -355,5 +354,5 @@ void handle_request(int fd, char *request) {
 		respond_string(fd, response);
 	}
 
-	errlog("--- request handling complete ---");
+	printf("--- Thread %lu request for %s complete.\n", pthread_self() % 1000, path);
 }
