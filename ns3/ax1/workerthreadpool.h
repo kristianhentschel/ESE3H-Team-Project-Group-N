@@ -1,5 +1,5 @@
 #ifndef __WORKER_THREADPOOL_H__
-#ifndef __WORKER_THREADPOOL_H__
+#define __WORKER_THREADPOOL_H__
 
 #include <pthread.h>
 #include <stdlib.h>
