@@ -53,7 +53,7 @@ int main(void) {
 	WTP	wtp;
 
 	/* set up all shared data structures for threading */
-	wtp = wtp_init(NTHREADS, WORK_BUFFER_SIZE, &connection_worker, &close_connection);
+	wtp = wtp_init(NTHREADS, WORK_BUFFER_SIZE, &close_connection, &connection_worker);
 	SERVER_RUNNING = 1;
 
 	/* allocate a socket */
