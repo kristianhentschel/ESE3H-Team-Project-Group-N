@@ -19,11 +19,13 @@ struct wtp {
 
 	unsigned buffer_count;
 	unsigned buffer_start;
-	
 };
+
+static void *wtp_worker(void *arg);
 
 WTP wtp_init(unsigned nthreads, unsigned buffer_size, void (*free_item)(void*), void (*worker)(void*)) {
 	WTP wtp;
+	unsigned i;
 	
 	if( !(wtp = malloc(sizeof(struct wtp))) ) {
 		return NULL;
@@ -52,6 +54,10 @@ WTP wtp_init(unsigned nthreads, unsigned buffer_size, void (*free_item)(void*), 
 		pthread_mutex_destroy(&wtp->lock);
 		free(wtp);
 		return NULL;
+	}
+
+	for (i = 0; i < nthreads; i++) {
+		pthread_create(&wtp->threads[i], NULL, wtp_worker, (void *) wtp);
 	}
 
 	pthread_mutex_unlock(&wtp->lock);
@@ -130,4 +136,25 @@ void *wtp_take(WTP wtp) {
 		pthread_mutex_unlock(&wtp->lock);
 		return item;
 	}
+}
+
+/* wait until item is available in buffer, take it, and give it to the specified worker method.
+ * then free the item using the given free_item method on it.
+ */
+static void *wtp_worker(void *arg) {
+	WTP wtp;
+	void *item;
+
+	wtp = (WTP) arg;
+	
+	while(1) {
+		if((item = wtp_take(wtp)) != NULL) {
+			wtp->worker(item);
+			wtp->free_item(item);
+		} else {
+			break;
+		}
+	}
+
+	return NULL;
 }
