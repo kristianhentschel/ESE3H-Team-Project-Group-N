@@ -1,5 +1,6 @@
 #include "networking.h"
 #include "linkedstringbuffer.h"
+#include "workerthreadpool.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,6 +17,13 @@
 #define SERVER_PORT 8080
 #define SERVER_BACKLOG 16
 #define REQUEST_BUFFER_SIZE 64
+#define NTHREADS 4
+#define WORK_BUFFER_SIZE 10
+
+static int SERVER_RUNNING;
+
+void connection_worker(void *arg);
+void close_connection(void *arg);
 
 void handle_connection(int fd);
 void handle_request(int fd, char *request);
@@ -26,27 +34,27 @@ enum http_status {HTTP_OK = 200, HTTP_NOT_FOUND = 404, HTTP_BAD_REQUEST = 400, H
 static pthread_mutex_t mutex_stdio = PTHREAD_MUTEX_INITIALIZER;
 
 void errlog(const char *msg) {
-	
 	pthread_mutex_lock(&mutex_stdio);
 	fprintf(stderr, "%s\n", msg);
 	pthread_mutex_unlock(&mutex_stdio);
 }
 
-void *worker_thread( void *connfd ) {
-	fprintf(stderr, "Started new thread #%lu\n", pthread_self());
-	
-	handle_connection(*(int *) connfd);
-	pthread_exit(0);
-
-	return NULL;
+void signal_handler(int signal) {
+	if (signal == SIGINT) {
+		errlog("Server slowly shutting down after receiving SIGINT.");
+		SERVER_RUNNING = 0;
+	}
 }
 
 int main(void) {
-	int 				sockfd, connfd;
+	int 				sockfd, connfd, *pointerfd;
 	struct sockaddr_in	addr, cliaddr;
 	socklen_t			cliaddrlen = sizeof(cliaddr);
+	WTP	wtp;
 
 	/* set up all shared data structures for threading */
+	wtp = wtp_init(NTHREADS, WORK_BUFFER_SIZE, &connection_worker, &close_connection);
+	SERVER_RUNNING = 1;
 
 	/* allocate a socket */
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -72,16 +80,20 @@ int main(void) {
 		return 1;
 	}
 
+	/* set up signal handling TODO */
+
 	/* accept (blocks until a client connects) */
-	while(1) {
+	while(SERVER_RUNNING) {
 		connfd = accept(sockfd, (struct sockaddr *) &cliaddr, &cliaddrlen);
 		if (connfd == -1) {
 			perror("Accept failed");
-			close(sockfd);
-			return 1;
+			break;
 		} else {
-			pthread_t thread;
-			pthread_create(&thread, NULL, worker_thread, (void *) &connfd);
+			pointerfd = malloc(sizeof(int)); /* TODO malloc never fails... */
+			*pointerfd = connfd;
+			errlog("main:\t adding a connection to the work buffer.");
+			wtp_put(wtp, pointerfd);
+		
 		}
 	}
 	close(sockfd);
@@ -93,8 +105,20 @@ int main(void) {
 	return 0;
 }
 
+/* wraps around handle_connection, given to thread pool as worker method.
+ * arg is a (int *) cast to a (void *) for the generic buffer. */
+void connection_worker(void *arg) {
+	handle_connection(* (int *) arg);
+}
 
-/* connection handler. reads from given socket descriptor, parses input stream, and sends responses. */
+/* closes the connection and frees the arg pointer. */
+void close_connection(void *arg) {
+	close(* (int *) arg);
+	free(arg);
+}
+
+/* connection handler. reads from given socket descriptor, parses input stream, and sends responses.
+ * Does not close the file descriptor. */
 void handle_connection(int fd) {
 	const char EOR[] = "\r\n\r\n";
 	unsigned int EOR_match;
@@ -104,7 +128,7 @@ void handle_connection(int fd) {
 	lsb request;
 	int start_reading;
 
-	errlog("Accepted connection");
+	errlog("Worker: Accepted connection");
 
 	request = lsb_create();
 	EOR_match = 0;
@@ -147,9 +171,6 @@ void handle_connection(int fd) {
 		errlog(strerror(errno));
 	}
 
-
-	errlog("Closing connection.");
-	close(fd);
 	lsb_destroy(request);
 }
 
@@ -175,8 +196,6 @@ void http_headers(int fd, int status, char *status_str, int content_type, int co
 
 	sprintf(buf, "\r\n");
 	write(fd, buf, strlen(buf));
-
-
 }
 
 /* check if the given request host matches any of this servers' hostnames
@@ -208,8 +227,6 @@ long file_size(const char *path){
 		return s.st_size;
 	}
 }
-
-
 
 /* get the mime type based on path/file name extension.
  * user must guarantee that path is always \0 terminated. */
