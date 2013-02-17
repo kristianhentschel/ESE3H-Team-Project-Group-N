@@ -17,7 +17,7 @@
 #define SERVER_PORT 8080
 #define SERVER_BACKLOG 1 
 #define REQUEST_BUFFER_SIZE 64
-#define NTHREADS 4
+#define NTHREADS 10
 
 static int SERVER_RUNNING;
 
