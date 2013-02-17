@@ -1,6 +1,6 @@
 #include "networking.h"
 #include "linkedstringbuffer.h"
-#include "workerthreadpool.h"
+#include "threadpool.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -15,10 +15,9 @@
 #include <pthread.h>
 
 #define SERVER_PORT 8080
-#define SERVER_BACKLOG 0 
+#define SERVER_BACKLOG 1 
 #define REQUEST_BUFFER_SIZE 64
 #define NTHREADS 4
-#define WORK_BUFFER_SIZE 1 
 
 static int SERVER_RUNNING;
 
@@ -50,10 +49,10 @@ int main(void) {
 	int 				sockfd, connfd, *pointerfd;
 	struct sockaddr_in	addr, cliaddr;
 	socklen_t			cliaddrlen = sizeof(cliaddr);
-	WTP	wtp;
+	TP	tp;
 
 	/* set up all shared data structures for threading */
-	wtp = wtp_init(NTHREADS, WORK_BUFFER_SIZE, &close_connection, &connection_worker);
+	tp = tp_init(NTHREADS, &close_connection, &connection_worker);
 	SERVER_RUNNING = 1;
 
 	/* allocate a socket */
@@ -91,8 +90,8 @@ int main(void) {
 		} else {
 			pointerfd = malloc(sizeof(int)); /* TODO malloc never fails... */
 			*pointerfd = connfd;
-			errlog("main:\t adding a connection to the work buffer.");
-			wtp_put(wtp, pointerfd);
+			errlog("main:\t Accepted connection, DISPATCHING.");
+			tp_dispatch(tp, pointerfd);
 		
 		}
 	}
