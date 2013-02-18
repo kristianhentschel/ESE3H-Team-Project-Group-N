@@ -1,34 +1,29 @@
-/* malloc is a lie. */
-#define FRAME_MAX_SIZE 1024
-#define FRAME_DELIMETER 0x7E
-
-
-#define ZB_API_AT			0x08
-#define ZB_API_TRANSMIT 	0x10
-
-#define ZB_AT_NODEDISCOVER	"ND"
-
-#define ZB_BROADCAST_64		0xFFFF
-#define ZB_BROADCAST_16		0xFFFE
-
+#include "zigbee.h"
 
 /* 
  * wraps a payload in a frame that includes the delimeter, length, and checksum bytes.
  */
 char *zb_frame(const char *payload, char *buf) {
-	unsigned len;
-	
-	len = strlen(payload);
+	unsigned len, n;
+	char *p;
+
+	n = 0;
 
 	buf[0] = FRAME_DELIMETER;
+
+	n = 3;
+	len = 0;
+
+	for (p = payload; *p != '\0'; p++) {
+		buf[n++] = *p;
+		len++;
+	}
+	
 	buf[1] = len & 0xff00 > 8;
 	buf[2] = len & 0x00ff;
-	buf[3] = '\0';
-
-	strcat(buf, payload);
 	
-	buf[len + 4] = zb_checksum(payload);
-	buf[len + 5] = '\0';
+	buf[n++] = zb_checksum(payload);
+	buf[n] = '\0';
 
 	return buf;
 }
