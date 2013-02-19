@@ -1,10 +1,10 @@
-CFLAGS = -W -Wall -pedantic -lpthread -g
+CFLAGS = -W -Wall -pedantic -g
 CC = gcc
 
 all: server
 
 server: server.o linkedstringbuffer.o threadpool.o 
-	${CC} ${CFLAGS} server.o linkedstringbuffer.o threadpool.o -o server
+	${CC} -lpthread ${CFLAGS} server.o linkedstringbuffer.o threadpool.o -o server
 
 server.o: server.c linkedstringbuffer.h networking.h threadpool.h
 
