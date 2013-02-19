@@ -178,9 +178,9 @@ void http_headers(int fd, int status, char *status_str, int content_type, int co
 	char *content_types[sizeof(enum http_mime)];
 	content_types[MIME_TEXT_PLAIN] = "text/plain";
 	content_types[MIME_TEXT_HTML]  = "text/html";
-	content_types[MIME_IMAGE_GIF]  = "text/gif";
-	content_types[MIME_IMAGE_PNG]  = "text/png";
-	content_types[MIME_IMAGE_JPEG] = "text/jpeg";
+	content_types[MIME_IMAGE_GIF]  = "image/gif";
+	content_types[MIME_IMAGE_PNG]  = "image/png";
+	content_types[MIME_IMAGE_JPEG] = "image/jpeg";
 
 	sprintf(buf, "HTTP/1.1 %i %s\r\n", status, status_str);
 	write(fd, buf, strlen(buf));
@@ -238,17 +238,15 @@ enum http_mime file_mime(char *path){
 		}
 	}
 
-	errlog(ext);
-
-	if (strcasecmp(c, "txt") == 0){
+	if (strcasecmp(ext, "txt") == 0){
 		return MIME_TEXT_PLAIN;
-	} else if (strcasecmp(c, "htm") == 0 || strcasecmp(c, "html")) {
+	} else if (strcasecmp(ext, "htm") == 0 || strcasecmp(ext, "html") == 0) {
 		return MIME_TEXT_HTML;
-	} else if (strcasecmp(c, "jpg") == 0 || strcasecmp(c, "jpeg")) {
+	} else if (strcasecmp(ext, "jpg") == 0 || strcasecmp(ext, "jpeg") == 0) {
 		return MIME_IMAGE_JPEG;
-	} else if (strcasecmp(c, "gif") == 0) {
+	} else if (strcasecmp(ext, "gif") == 0) {
 		return MIME_IMAGE_GIF;
-	} else if (strcasecmp(c, "png") == 0) {
+	} else if (strcasecmp(ext, "png") == 0) {
 		return MIME_IMAGE_PNG;
 	} else {
 		return MIME_APPLICATION_OCTET_STREAM;
