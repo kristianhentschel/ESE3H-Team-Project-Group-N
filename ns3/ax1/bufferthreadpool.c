@@ -1,7 +1,7 @@
-#include "workerthreadpool.h"
+#include "threadpool.h"
 #include <assert.h>
-
-struct wtp {
+#define TP_BUF_SIZE 10
+struct tp {
 	unsigned nthreads;
 	unsigned buffer_size;
 
@@ -21,119 +21,121 @@ struct wtp {
 	unsigned buffer_start;
 };
 
-static void *wtp_worker(void *arg);
+static void *tp_worker(void *arg);
+void *tp_take(TP tp);
 
-WTP wtp_init(unsigned nthreads, unsigned buffer_size, void (*free_item)(void*), void (*worker)(void*)) {
-	WTP wtp;
+TP tp_init(unsigned nthreads, void (*free_item)(void*), void (*worker)(void*)) {
+	TP tp;
 	unsigned i;
+	unsigned buffer_size = TP_BUF_SIZE;
 	
-	if( !(wtp = malloc(sizeof(struct wtp))) ) {
+	if( !(tp = malloc(sizeof(struct tp))) ) {
 		return NULL;
 	}
 
-	pthread_mutex_init(&wtp->lock, NULL);
-	pthread_mutex_lock(&wtp->lock);
+	pthread_mutex_init(&tp->lock, NULL);
+	pthread_mutex_lock(&tp->lock);
 
-	pthread_cond_init(&wtp->nonfull, NULL);
-	pthread_cond_init(&wtp->nonempty, NULL); 
+	pthread_cond_init(&tp->nonfull, NULL);
+	pthread_cond_init(&tp->nonempty, NULL); 
 
-	wtp->nthreads		= nthreads;
-	wtp->buffer_size	= buffer_size;
-	wtp->free_item		= free_item;
-	wtp->worker 		= worker;
+	tp->nthreads		= nthreads;
+	tp->buffer_size	= buffer_size;
+	tp->free_item		= free_item;
+	tp->worker 		= worker;
 
-	wtp->buffer_count = 0;
-	wtp->buffer_start = 0;
-	wtp->selfdestruct = 0;
+	tp->buffer_count = 0;
+	tp->buffer_start = 0;
+	tp->selfdestruct = 0;
 	
-	if( !(wtp->threads = malloc(nthreads * sizeof(pthread_t)))
-			|| !(wtp->buffer = malloc(buffer_size * sizeof(void *)))) {
-		free(wtp->threads);
-		free(wtp->buffer);
-		pthread_mutex_unlock(&wtp->lock);
-		pthread_mutex_destroy(&wtp->lock);
-		free(wtp);
+	if( !(tp->threads = malloc(nthreads * sizeof(pthread_t)))
+			|| !(tp->buffer = malloc(buffer_size * sizeof(void *)))) {
+		free(tp->threads);
+		free(tp->buffer);
+		pthread_mutex_unlock(&tp->lock);
+		pthread_mutex_destroy(&tp->lock);
+		free(tp);
 		return NULL;
 	}
 
 	for (i = 0; i < nthreads; i++) {
-		pthread_create(&wtp->threads[i], NULL, wtp_worker, (void *) wtp);
+		pthread_create(&tp->threads[i], NULL, tp_worker, (void *) tp);
 	}
 
-	pthread_mutex_unlock(&wtp->lock);
-	return wtp;
+	pthread_mutex_unlock(&tp->lock);
+	return tp;
 }
 
-void wtp_destroy(WTP wtp) {
+void tp_destroy(TP tp) {
 	unsigned i;
 	void *item;
 
 	/* set selfdestruct flag and let all workers continue */
-	pthread_mutex_lock(&wtp->lock);
-	wtp->selfdestruct = 1;
-	pthread_cond_broadcast(&wtp->nonempty);
-	pthread_mutex_unlock(&wtp->lock);
+	pthread_mutex_lock(&tp->lock);
+	tp->selfdestruct = 1;
+	pthread_cond_broadcast(&tp->nonempty);
+	pthread_mutex_unlock(&tp->lock);
 	
 	/* wait for all threads to die gracefully - ie after finishing the current request. */
-	for (i = 0; i < wtp->nthreads; i++) {
-		pthread_join(wtp->threads[i], NULL);
+	for (i = 0; i < tp->nthreads; i++) {
+		pthread_join(tp->threads[i], NULL);
 	}
 	
 	/* destroy all items left in buffer */
-	while ((item = wtp_take(wtp)) != NULL) {
-		wtp->free_item(item);
+	while ((item = tp_take(tp)) != NULL) {
+		tp->free_item(item);
 	}
 
 	/* destroy wtb data structure and locks */
-	pthread_mutex_lock(&wtp->lock);
-	pthread_mutex_destroy(&wtp->lock);
-	pthread_cond_destroy(&wtp->nonfull);
-	pthread_cond_destroy(&wtp->nonempty);
+	pthread_mutex_lock(&tp->lock);
+	pthread_mutex_destroy(&tp->lock);
+	pthread_cond_destroy(&tp->nonfull);
+	pthread_cond_destroy(&tp->nonempty);
 	
-	free(wtp->threads);
-	free(wtp->buffer);
-	free(wtp);
+	free(tp->threads);
+	free(tp->buffer);
+	free(tp);
 }
 
-void wtp_put(WTP wtp, void *work) {
-	pthread_mutex_lock(&wtp->lock);
+void tp_dispatch(TP tp, void *work) {
+	pthread_mutex_lock(&tp->lock);
 	
-	while (wtp->buffer_count == wtp->buffer_size && !wtp->selfdestruct) {
-		pthread_cond_wait(&wtp->nonfull, &wtp->lock);
+	while (tp->buffer_count == tp->buffer_size && !tp->selfdestruct) {
+		pthread_cond_wait(&tp->nonfull, &tp->lock);
 	}
 
-	if (wtp->selfdestruct) {
-		wtp->free_item(work);
-		pthread_mutex_unlock(&wtp->lock);
+	if (tp->selfdestruct) {
+		tp->free_item(work);
+		pthread_mutex_unlock(&tp->lock);
 		return;
 	} else {
-		wtp->buffer[(wtp->buffer_start + wtp->buffer_count) % wtp->buffer_size] = work;
-		wtp->buffer_count++;
-		pthread_cond_signal(&wtp->nonempty);
-		pthread_mutex_unlock(&wtp->lock);
+		tp->buffer[(tp->buffer_start + tp->buffer_count) % tp->buffer_size] = work;
+		tp->buffer_count++;
+		pthread_cond_signal(&tp->nonempty);
+		pthread_mutex_unlock(&tp->lock);
 		return;
 	}
 }
 
-void *wtp_take(WTP wtp) {
+void *tp_take(TP tp) {
 	void *item;
 
-	pthread_mutex_lock(&wtp->lock);
+	pthread_mutex_lock(&tp->lock);
 	
-	while (wtp->buffer_count == 0 && !wtp->selfdestruct) {
-		pthread_cond_wait(&wtp->nonempty, &wtp->lock);
+	while (tp->buffer_count == 0 && !tp->selfdestruct) {
+		pthread_cond_wait(&tp->nonempty, &tp->lock);
 	}
 
-	if (wtp->selfdestruct) {
-		pthread_mutex_unlock(&wtp->lock);
+	if (tp->selfdestruct) {
+		pthread_mutex_unlock(&tp->lock);
 		return NULL;
 	} else {
-		assert(wtp->buffer_count > 0);
-		item = wtp->buffer[wtp->buffer_start];
-		wtp->buffer_start = (wtp->buffer_start + 1) % wtp->buffer_size;
-		wtp->buffer_count--;
-		pthread_cond_signal(&wtp->nonfull);
-		pthread_mutex_unlock(&wtp->lock);
+		assert(tp->buffer_count > 0);
+		item = tp->buffer[tp->buffer_start];
+		tp->buffer_start = (tp->buffer_start + 1) % tp->buffer_size;
+		tp->buffer_count--;
+		pthread_cond_signal(&tp->nonfull);
+		pthread_mutex_unlock(&tp->lock);
 		return item;
 	}
 }
@@ -141,16 +143,16 @@ void *wtp_take(WTP wtp) {
 /* wait until item is available in buffer, take it, and give it to the specified worker method.
  * then free the item using the given free_item method on it.
  */
-static void *wtp_worker(void *arg) {
-	WTP wtp;
+static void *tp_worker(void *arg) {
+	TP tp;
 	void *item;
 
-	wtp = (WTP) arg;
+	tp = (TP) arg;
 	
 	while(1) {
-		if((item = wtp_take(wtp)) != NULL) {
-			wtp->worker(item);
-			wtp->free_item(item);
+		if((item = tp_take(tp)) != NULL) {
+			tp->worker(item);
+			tp->free_item(item);
 		} else {
 			break;
 		}

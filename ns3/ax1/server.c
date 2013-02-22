@@ -17,7 +17,7 @@
 #define SERVER_PORT 8080
 #define SERVER_BACKLOG 1 
 #define REQUEST_BUFFER_SIZE 64
-#define NTHREADS 10
+#define NTHREADS 4
 
 static int SERVER_RUNNING;
 
@@ -52,6 +52,7 @@ int main(void) {
 	TP	tp;
 
 	/* set up all shared data structures for threading */
+	printf("Initialising thread pool with %d threads\n", NTHREADS);
 	tp = tp_init(NTHREADS, &close_connection, &connection_worker);
 	SERVER_RUNNING = 1;
 
@@ -183,18 +184,28 @@ void http_headers(int fd, int status, char *status_str, int content_type, int co
 	content_types[MIME_IMAGE_JPEG] = "image/jpeg";
 
 	sprintf(buf, "HTTP/1.1 %i %s\r\n", status, status_str);
-	write(fd, buf, strlen(buf));
+	if(write(fd, buf, strlen(buf)) == -1) {
+		perror("writing headers failed.");
+		return;
+	}
 	
 	sprintf(buf, "Content-Type: %s\r\n", content_types[content_type]);
+	if(write(fd, buf, strlen(buf)) == -1) {
+		perror("writing headers failed.");
+		return;
+	}
 	
-	
-	write(fd, buf, strlen(buf));
-
 	sprintf(buf, "Content-Length: %i\r\n", content_length);
-	write(fd, buf, strlen(buf));
+	if(write(fd, buf, strlen(buf)) == -1) {
+		perror("writing headers failed.");
+		return;
+	}
 
 	sprintf(buf, "\r\n");
-	write(fd, buf, strlen(buf));
+	if(write(fd, buf, strlen(buf)) == -1) {
+		perror("writing headers failed.");
+		return;
+	}
 }
 
 /* check if the given request host matches any of this servers' hostnames
@@ -256,16 +267,18 @@ enum http_mime file_mime(char *path){
 /* write a string to the file descriptor */
 void respond_string(int fd, char *response) {
 	errlog("responding with string");
-	write(fd, response, strlen(response));
+	if( write(fd, response, strlen(response)) == -1) {
+		perror("writing error document fails");
+		return;
+	}
 }
 
-/* write a file to the connection file descriptor
- * TODO error checking for write system call, as client may close socket unexpectedly. Also, catch or block SIGPIPE signal when doing this.
+/* copy a file to the connection file descriptor
  */
 void respond_file(int fd, char *path) {
 	char writebuf[1024*1024]; /* TODO #define this*/
 	FILE *docfd;
-	ssize_t count;
+	ssize_t count, written;
 
 	docfd = fopen(path, "r");
 
@@ -273,13 +286,17 @@ void respond_file(int fd, char *path) {
 		errlog("could not open file");
 	} else {
 		while ( (count = fread(writebuf, 1, sizeof(writebuf), docfd)) > 0) {
-			write(fd, writebuf, count);
-			fprintf(stderr, "%lu ", count);
-			errlog("bytes written from file.");
+			written = write(fd, writebuf, count);
+			if(written != -1){
+				fprintf(stderr, "%lu ", written);
+				errlog("bytes written from file.");
+			} else {
+				perror("write failed");
+				break;
+			}
 		}
 	}
 	fclose(docfd);
-	errlog("file written completely.");
 }
 
 /* handle a single request, parsing the given string until EOR (\r\n\r\n) and ignoring any data after that.
