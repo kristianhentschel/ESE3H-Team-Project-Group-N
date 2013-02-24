@@ -10,24 +10,21 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <signal.h>
 
 #include <pthread.h>
 
 #define SERVER_PORT 8080
 #define SERVER_BACKLOG 1 
-#define REQUEST_BUFFER_SIZE 64
-#define NTHREADS 4
-
-static int SERVER_RUNNING;
+#define REQUEST_BUFFER_SIZE 1024
+#define NTHREADS 6
 
 void connection_worker(void *arg);
 void close_connection(void *arg);
 
 void handle_connection(int fd);
-void handle_request(int fd, char *request);
+int handle_request(int fd, char *request);
 
-enum http_mime { MIME_TEXT_PLAIN, MIME_TEXT_HTML, MIME_IMAGE_JPEG, MIME_IMAGE_GIF, MIME_IMAGE_PNG, MIME_APPLICATION_OCTET_STREAM};
+enum http_mime {MIME_TEXT_PLAIN, MIME_TEXT_HTML, MIME_IMAGE_JPEG, MIME_IMAGE_GIF, MIME_IMAGE_PNG, MIME_APPLICATION_OCTET_STREAM};
 enum http_status {HTTP_OK = 200, HTTP_NOT_FOUND = 404, HTTP_BAD_REQUEST = 400, HTTP_INTERNAL_SERVER_ERROR = 500};
 
 static pthread_mutex_t mutex_stdio = PTHREAD_MUTEX_INITIALIZER;
@@ -36,13 +33,6 @@ void errlog(const char *msg) {
 	pthread_mutex_lock(&mutex_stdio);
 	fprintf(stderr, "%s\n", msg);
 	pthread_mutex_unlock(&mutex_stdio);
-}
-
-void signal_handler(int signal) {
-	if (signal == SIGINT) {
-		errlog("Server slowly shutting down after receiving SIGINT.");
-		SERVER_RUNNING = 0;
-	}
 }
 
 int main(void) {
@@ -54,7 +44,6 @@ int main(void) {
 	/* set up all shared data structures for threading */
 	printf("Initialising thread pool with %d threads\n", NTHREADS);
 	tp = tp_init(NTHREADS, &close_connection, &connection_worker);
-	SERVER_RUNNING = 1;
 
 	/* allocate a socket */
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -77,23 +66,24 @@ int main(void) {
 	/* listen for incoming connections */
 	if (listen(sockfd, SERVER_BACKLOG) == -1) {
 		perror("Could not listen");
+		close(sockfd);
 		return 1;
 	}
 
-	/* set up signal handling TODO */
-
 	/* accept (blocks until a client connects) */
-	while(SERVER_RUNNING) {
+	while(1) {
 		connfd = accept(sockfd, (struct sockaddr *) &cliaddr, &cliaddrlen);
 		if (connfd == -1) {
 			perror("Accept failed");
 			break;
 		} else {
-			pointerfd = malloc(sizeof(int)); /* TODO malloc never fails... */
+			if( (pointerfd = malloc(sizeof(int))) == NULL) {
+				perror("malloc failed");
+				break;
+			}
 			*pointerfd = connfd;
 			errlog("main:\t Accepted connection, DISPATCHING.");
 			tp_dispatch(tp, pointerfd);
-		
 		}
 	}
 	close(sockfd);
@@ -101,7 +91,6 @@ int main(void) {
 	/* free shared data structures */
 	pthread_mutex_lock(&mutex_stdio);
 	pthread_mutex_destroy(&mutex_stdio);
-
 	return 0;
 }
 
@@ -122,7 +111,8 @@ void close_connection(void *arg) {
 void handle_connection(int fd) {
 	const char EOR[] = "\r\n\r\n";
 	unsigned int EOR_match;
-	int count, i;
+	ssize_t count;
+	int i;
 	char buf[REQUEST_BUFFER_SIZE];
 	char *request_string;	
 	lsb request;
@@ -133,7 +123,8 @@ void handle_connection(int fd) {
 	request = lsb_create();
 	EOR_match = 0;
 	
-	while ((count = read(fd, &buf, REQUEST_BUFFER_SIZE - 1)) > 0) {
+	/* TODO count is of type size_t, the define - 1 is an int. */
+	while ((count = read(fd, &buf, (REQUEST_BUFFER_SIZE - 1))) > 0) {
 		buf[count] = '\0';
 
 		start_reading = 0;
@@ -147,14 +138,18 @@ void handle_connection(int fd) {
 			}
 
 			if (EOR_match == strlen(EOR)) {
-				errlog("matched end of request");
 				EOR_match = 0;
 				
 				/* send request, including current buffer, to be handled. */
 				lsb_add(request, &buf[start_reading]);
 				
 				request_string = lsb_string(request);
-				handle_request(fd, request_string);
+				if( !handle_request(fd, request_string) ) {
+					errlog("connection handling failed. Abandoning connection.");
+					free(request_string);
+					lsb_destroy(request);
+					return;
+				}
 				free(request_string);
 				lsb_destroy(request);
 				
@@ -174,7 +169,7 @@ void handle_connection(int fd) {
 	lsb_destroy(request);
 }
 
-void http_headers(int fd, int status, char *status_str, int content_type, int content_length) {
+int http_headers(int fd, int status, char *status_str, int content_type, size_t content_length) {
 	char buf[1024];
 	char *content_types[sizeof(enum http_mime)];
 	content_types[MIME_TEXT_PLAIN] = "text/plain";
@@ -186,26 +181,28 @@ void http_headers(int fd, int status, char *status_str, int content_type, int co
 	sprintf(buf, "HTTP/1.1 %i %s\r\n", status, status_str);
 	if(write(fd, buf, strlen(buf)) == -1) {
 		perror("writing headers failed.");
-		return;
+		return 0;
 	}
 	
 	sprintf(buf, "Content-Type: %s\r\n", content_types[content_type]);
 	if(write(fd, buf, strlen(buf)) == -1) {
 		perror("writing headers failed.");
-		return;
+		return 0;
 	}
 	
-	sprintf(buf, "Content-Length: %i\r\n", content_length);
+	sprintf(buf, "Content-Length: %lu\r\n", (unsigned long) content_length);
 	if(write(fd, buf, strlen(buf)) == -1) {
 		perror("writing headers failed.");
-		return;
+		return 0;
 	}
 
 	sprintf(buf, "\r\n");
 	if(write(fd, buf, strlen(buf)) == -1) {
 		perror("writing headers failed.");
-		return;
+		return 0;
 	}
+
+	return 1;
 }
 
 /* check if the given request host matches any of this servers' hostnames
@@ -227,14 +224,13 @@ int host_match(const char *request) {
 }
 
 /* returns the file size or -1 if the file is not accessible */
-long file_size(const char *path){
+size_t file_size(const char *path){
 	struct stat s;
 
 	if( stat(path, &s) != 0) {
-		return -1L;
+		return 0;
 	} else {
-
-		return s.st_size;
+		return (size_t) s.st_size;
 	}
 }
 
@@ -265,20 +261,21 @@ enum http_mime file_mime(char *path){
 }
 
 /* write a string to the file descriptor */
-void respond_string(int fd, char *response) {
-	errlog("responding with string");
+int respond_string(int fd, char *response) {
 	if( write(fd, response, strlen(response)) == -1) {
-		perror("writing error document fails");
-		return;
+		perror("writing error document failed");
+		return 0;
 	}
+	return 1;
 }
 
 /* copy a file to the connection file descriptor
  */
-void respond_file(int fd, char *path) {
+int respond_file(int fd, char *path) {
 	char writebuf[1024*1024]; /* TODO #define this*/
 	FILE *docfd;
-	ssize_t count, written;
+	size_t count;
+	ssize_t written;
 
 	docfd = fopen(path, "r");
 
@@ -292,25 +289,28 @@ void respond_file(int fd, char *path) {
 				errlog("bytes written from file.");
 			} else {
 				perror("write failed");
-				break;
+				fclose(docfd);
+				return 0;
 			}
 		}
 	}
 	fclose(docfd);
+	return 1;
 }
 
 /* handle a single request, parsing the given string until EOR (\r\n\r\n) and ignoring any data after that.
  * Handles paths of up to 1023 characters.
  */ 
-void handle_request(int fd, char *request) {
+int handle_request(int fd, char *request) {
 	char *response, *status_str;
 	char path[1024]; 
-	long content_length = 0;
+	size_t content_length = 0;
 	enum http_status status = HTTP_OK;
 	enum http_mime mime = MIME_TEXT_HTML;
 
 
 	/* parse request data */
+	errlog(request);
 
 	if( sscanf(request, "GET /%1023s HTTP/1.1", path) != 1 ) {
 		/* we only support GET, so might as well hard code it... */
@@ -324,7 +324,7 @@ void handle_request(int fd, char *request) {
 		/* path definitely outside document root. */
 		errlog("invalid path, cannot start with . or /");
 		status = HTTP_BAD_REQUEST;
-	} else if ((content_length = file_size(path)) < 0) {
+	} else if ((content_length = file_size(path)) == 0) {
 		/* file not found or un-stat-able */
 		errlog("file not found");
 		status = HTTP_NOT_FOUND;
@@ -360,13 +360,22 @@ void handle_request(int fd, char *request) {
 		content_length = strlen(response);
 	}
 
-	http_headers(fd, status, status_str, mime, content_length);
-
-	if (status == HTTP_OK) {
-		respond_file(fd, path);
-	} else {
-		respond_string(fd, response);
+	if(!http_headers(fd, status, status_str, mime, content_length)) {
+		errlog("Writing headers failed. abandoning request.");
+		return 0;
 	}
 
-	printf("--- Thread %lu request for %s complete.\n", pthread_self() % 1000, path);
+	if (status == HTTP_OK) {
+		if(!respond_file(fd, path)) {
+			errlog("Writing file response failed. abandoning request.");
+			return 0;
+		}
+	} else {
+		if(!respond_string(fd, response)) {
+			errlog("writing error message failed. abandoning request.");
+		}
+	}
+
+	printf("--- Thread %lu request for %s on connection %d complete.\n", pthread_self() % 1000, path, fd);
+	return 1; /* success */
 }
