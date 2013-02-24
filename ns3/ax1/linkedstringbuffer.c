@@ -8,7 +8,7 @@ struct lsb_node {
 };
 
 struct lsb_struct {
-	long size;
+	size_t size;
 	struct lsb_node *head;
 	struct lsb_node *tail;
 };
@@ -74,7 +74,7 @@ char *lsb_string(lsb l) {
 
 /* adds another \0 delimited string to the buffer, copying it into a malloc'd string. */
 void lsb_add(lsb l, const char *s) {
-	int size;
+	size_t size;
 	struct lsb_node *node;
 
 	node = lsb_node_create();
