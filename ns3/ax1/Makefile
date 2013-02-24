@@ -1,4 +1,4 @@
-CFLAGS = -W -Wall -pedantic -g
+CFLAGS = -W -Wextra -Wall -Wconversion -pedantic -g
 CC = gcc
 
 all: server buf_server
