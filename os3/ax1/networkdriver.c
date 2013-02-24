@@ -60,6 +60,7 @@ void init_network_driver(NetworkDevice               nd,
                          unsigned long               mem_length,
                          FreePacketDescriptorStore * fpds_ptr) {
 	int i;
+	pthread_t worker_rx, worker_tx;
 
 	pthread_mutex_init(&TX.lock, NULL);
 	pthread_cond_init(&TX.nonfull, NULL);
@@ -79,6 +80,9 @@ void init_network_driver(NetworkDevice               nd,
 	 */
 
 	/* TODO: initialise threads (receiver and transmitter) */
+	pthread_create(&worker_rx, NULL, thread_packet_receiver, (void *) nd);
+	pthread_create(&worker_tx, NULL, thread_packet_transmitter, (void *) nd);
+	
 }
 
 
@@ -91,7 +95,7 @@ void *thread_packet_receiver(void *arg) {
 
 	while(1) {
 		/* TODO This blocks if there are no PDs left. but what else can we do? */
-		blocking_get_pd(&pd);
+		blocking_get_pd(FPDS, &pd);
 
 		init_packet_descriptor(&pd);
 		register_receiving_packetdescriptor(nd, &pd);
