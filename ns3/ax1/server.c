@@ -1,7 +1,29 @@
-#include "networking.h"
+/*
+ * Author: Kristian Hentschel
+ * Matric: 1003734h
+ * Submission: Networked Systems 3 Assessed Exercise 1
+ *
+ * This file is my own work.
+ *
+ * A simple web-server using a threadpool implemented using a work-queue (see bufferthreadpool.c)
+ * The threadpool interface is defined in threadpool.h as I experimented with two separate implementations of the threadpool) for handling multiple connections.
+ * Request capturing is done using a linked list of character arrays (see linkedstringbuffer.[ch]).
+ *
+ * Known issues:
+ *  - In some cases, aborting a request (client closing the connection before a transfer is complete) causes the server to receive a SIGPIPE signal,
+ *    this is despite all write() return codes are handled and the socket is closed on write failures.
+ *  - Browsers open many keep-alive connection. If the server is run with less threads than incoming client connections, and no connection: close headers are sent,
+ *    these requests will be ignored until a thread becomes available due to the browser closing an earlier connection (Chrome: after a long time).
+ *  - There is no graceful way to shutdown the server - SIGINT kills it, but is not currently handled to correctly stop the threads and free all data structures.
+ */
 #include "linkedstringbuffer.h"
 #include "threadpool.h"
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -10,13 +32,17 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
 #include <pthread.h>
 
+/* Debugging - uncomment one of these to turn prints on or off */
+#define DEBUG printf
+/* #define DEBUG void */
+
+/* General server performance settings */
 #define SERVER_PORT 8080
-#define SERVER_BACKLOG 1 
-#define NTHREADS 1
+#define NTHREADS 32 
 #define DOMAIN_SUFFIX ".dcs.gla.ac.uk"
+#define SERVER_BACKLOG 1 
 
 /* Read buffer for individual socket reads */
 #define REQUEST_BUFFER_SIZE 1024
@@ -42,23 +68,16 @@ int handle_request(int fd, char *request);
 enum http_mime {MIME_TEXT_PLAIN, MIME_TEXT_HTML, MIME_IMAGE_JPEG, MIME_IMAGE_GIF, MIME_IMAGE_PNG, MIME_APPLICATION_OCTET_STREAM};
 enum http_status {HTTP_OK = 200, HTTP_NOT_FOUND = 404, HTTP_BAD_REQUEST = 400, HTTP_INTERNAL_SERVER_ERROR = 500};
 
-static pthread_mutex_t mutex_stdio = PTHREAD_MUTEX_INITIALIZER;
-
-void errlog(const char *msg) {
-	pthread_mutex_lock(&mutex_stdio);
-	fprintf(stderr, "%s\n", msg);
-	pthread_mutex_unlock(&mutex_stdio);
-}
-
 int main(void) {
 	int 				sockfd, connfd, *pointerfd;
 	struct sockaddr_in	addr, cliaddr;
 	socklen_t			cliaddrlen = sizeof(cliaddr);
 	TP	tp;
-
+	
 	/* set up all shared data structures for threading */
 	printf("Initialising thread pool with %d threads\n", NTHREADS);
 	tp = tp_init(NTHREADS, &close_connection, &connection_worker);
+
 
 	/* allocate a socket */
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -97,15 +116,14 @@ int main(void) {
 				break;
 			}
 			*pointerfd = connfd;
-			errlog("main:\t Accepted connection, DISPATCHING.");
+			DEBUG("main:\t Accepted connection, DISPATCHING.\n");
 			tp_dispatch(tp, pointerfd);
 		}
 	}
 	close(sockfd);
 	
 	/* free shared data structures */
-	pthread_mutex_lock(&mutex_stdio);
-	pthread_mutex_destroy(&mutex_stdio);
+	tp_destroy(tp);
 	return 0;
 }
 
@@ -133,12 +151,11 @@ void handle_connection(int fd) {
 	lsb request;
 	int start_reading;
 
-	errlog("Worker: Accepted connection");
+	DEBUG("Worker: Accepted connection\n");
 
 	request = lsb_create();
 	EOR_match = 0;
 	
-	/* TODO count is of type size_t, the define - 1 is an int. */
 	while ((count = read(fd, &buf, (REQUEST_BUFFER_SIZE - 1))) > 0) {
 		buf[count] = '\0';
 
@@ -160,7 +177,7 @@ void handle_connection(int fd) {
 				
 				request_string = lsb_string(request);
 				if( !handle_request(fd, request_string) ) {
-					errlog("connection handling failed. Abandoning connection.");
+					DEBUG("connection handling failed. Abandoning connection.\n");
 					free(request_string);
 					lsb_destroy(request);
 					return;
@@ -178,7 +195,7 @@ void handle_connection(int fd) {
 	}
 
 	if (count == -1) {
-		errlog(strerror(errno));
+		DEBUG(strerror(errno));
 	}
 
 	lsb_destroy(request);
@@ -260,7 +277,7 @@ size_t file_size(const char *path){
 		return 0;
 	} else if (!S_ISREG(s.st_mode)) {
 		/* not a regular file (e.g. directory or symlink) */
-		errlog("not a regular file");
+		DEBUG("not a regular file\n");
 		return 0;
 	} else {
 		return (size_t) s.st_size;
@@ -299,7 +316,7 @@ enum http_mime file_mime(char *path){
 /* write a string to the file descriptor */
 int respond_string(int fd, char *response) {
 	if( write(fd, response, strlen(response)) == -1) {
-		perror("writing error document failed");
+		perror("writing error document failed\n");
 		return 0;
 	}
 	return 1;
@@ -316,13 +333,12 @@ int respond_file(int fd, char *path) {
 	docfd = fopen(path, "r");
 
 	if(docfd == NULL) {
-		errlog("could not open file");
+		DEBUG("could not open file\n");
 	} else {
 		while ( (count = fread(writebuf, 1, sizeof(writebuf), docfd)) > 0) {
 			written = write(fd, writebuf, count);
 			if(written != -1){
-				fprintf(stderr, "%lu ", written);
-				errlog("bytes written from file.");
+				DEBUG("%lu bytes written from file.\n", written);
 			} else {
 				perror("write failed");
 				fclose(docfd);
@@ -347,23 +363,23 @@ int handle_request(int fd, char *request) {
 
 
 	/* parse request data */
-	errlog(request);
+	DEBUG(request);
 
 	if( sscanf(request, "GET /%" STR(SHORT_LINE_BUFFER) "s HTTP/1.1", path) != 1 ) {
 		/* we only support GET, so might as well hard code it... */
 		status = HTTP_BAD_REQUEST;
-		errlog("Unsupported request method, HTTP version, or header format.");
+		DEBUG("Unsupported request method, HTTP version, or header format.\n");
 	} else if (!host_match(request)) {
-		errlog("hostname does not match");
+		DEBUG("hostname does not match\n");
 		status = HTTP_BAD_REQUEST;	
 	} else if (path[0] == '.' || path[0] == '/') {
-		errlog("invalid path, cannot start with . or /");
+		DEBUG("invalid path, cannot start with . or /\n");
 		status = HTTP_BAD_REQUEST;
 	} else if ((content_length = file_size(path)) == 0) {
-		errlog("file not found or invalid");
+		DEBUG("file not found or invalid\n");
 		status = HTTP_NOT_FOUND;
 	} else {
-		printf("--- Thread %lu serving request for %s.\n", pthread_self() % 1000, path);
+		DEBUG("--- Thread %lu serving request for %s.\n", pthread_self() % 1000, path);
 		status = HTTP_OK;
 		mime = file_mime(path);
 	}
@@ -377,16 +393,16 @@ int handle_request(int fd, char *request) {
 			break;
 		case HTTP_NOT_FOUND:
 			status_str = "Not Found";
-			response = "<html><body><h1>404 File  not found</h1></body></html>";
+			response = "<html><body><h1>404 File Not Found</h1></body></html>";
 			break;
 		case HTTP_BAD_REQUEST:
 			status_str = "Bad Request";
-			response = "<html><body><h1>400 bad request</h1></body></html>";
+			response = "<html><body><h1>400 Bad Request</h1></body></html>";
 			break;
 		default: /* Internal server error */
 			status_str = "Internal Server Error";
 			status = HTTP_INTERNAL_SERVER_ERROR;
-			response = "<html><body><h1>500 internal server error</h1></body></html>";
+			response = "<html><body><h1>500 Internal Server Error</h1></body></html>";
 			break;
 	}
 
@@ -395,22 +411,22 @@ int handle_request(int fd, char *request) {
 	}
 
 	if(!http_headers(fd, status, status_str, mime, content_length)) {
-		errlog("Writing headers failed. abandoning request.");
+		DEBUG("Writing headers failed. abandoning request.\n");
 		return 0;
 	}
 
 	if (status == HTTP_OK) {
 		if(!respond_file(fd, path)) {
-			errlog("Writing file response failed. abandoning request.");
+			DEBUG("Writing file response failed. abandoning request.\n");
 			return 0;
 		}
 	} else {
 		if(!respond_string(fd, response)) {
-			errlog("writing error message failed. abandoning request.");
+			DEBUG("writing error message failed. abandoning request.\n");
 			return 0;
 		}
 	}
 
-	printf("--- Thread %lu request for %s on connection %d complete.\n", pthread_self() % 1000, path, fd);
+	DEBUG("--- Thread %lu request for %s on connection %d complete.\n", pthread_self() % 1000, path, fd);
 	return 1; /* success */
 }

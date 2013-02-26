@@ -1,3 +1,13 @@
+/*
+ * Author: Kristian Hentschel
+ * Matric: 1003734h
+ * Submission: Networked Systems 3 Assessed Exercise 1
+ *
+ * This file is my own work.
+ *
+ * Threadpool using a work queue. size of the work queue is set in TP_BUF_SIZE. Currently set to 1 to avoid accepting more connections than threads are available.
+ */
+
 #include "threadpool.h"
 #include <assert.h>
 

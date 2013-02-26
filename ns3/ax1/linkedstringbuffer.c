@@ -1,3 +1,12 @@
+/*
+ * Author: Kristian Hentschel
+ * Matric: 1003734h
+ * Submission: Networked Systems 3 Assessed Exercise 1
+ *
+ * This file is my own work.
+ *
+ * Implements a dynamically allocated string buffer that can grow to almost any size as required, without copying previously allocated memory around too much.
+ */
 #include "linkedstringbuffer.h"
 #include <stdlib.h>
 #include <string.h>
