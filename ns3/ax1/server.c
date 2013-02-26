@@ -15,8 +15,23 @@
 
 #define SERVER_PORT 8080
 #define SERVER_BACKLOG 1 
+#define NTHREADS 1
+#define DOMAIN_SUFFIX ".dcs.gla.ac.uk"
+
+/* Read buffer for individual socket reads */
 #define REQUEST_BUFFER_SIZE 1024
-#define NTHREADS 6
+
+/* Buffers used for individual HTTP headers, path names, hostnames, etc. */
+#define SHORT_LINE_BUFFER 1024
+
+/* Files are read/written in blocks of this size. */
+#define FILE_COPY_BUFFER 1024*1024
+
+/* helper macros for using numeric defines in strings (sscanf buffer sizes), source:
+ * http://stackoverflow.com/questions/5459868/c-preprocessor-concatenate-int-to-string
+ */
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
 
 void connection_worker(void *arg);
 void close_connection(void *arg);
@@ -100,7 +115,7 @@ void connection_worker(void *arg) {
 	handle_connection(* (int *) arg);
 }
 
-/* closes the connection and frees the arg pointer. */
+/* closes the connection and frees the arg pointer. given to threadpool for freeing buffer items. */
 void close_connection(void *arg) {
 	close(* (int *) arg);
 	free(arg);
@@ -169,8 +184,9 @@ void handle_connection(int fd) {
 	lsb_destroy(request);
 }
 
+/* sends http headers on given connection. returns 0 on write failure, 1 normally. */
 int http_headers(int fd, int status, char *status_str, int content_type, size_t content_length) {
-	char buf[1024];
+	char buf[SHORT_LINE_BUFFER];
 	char *content_types[sizeof(enum http_mime)];
 	content_types[MIME_TEXT_PLAIN] = "text/plain";
 	content_types[MIME_TEXT_HTML]  = "text/html";
@@ -205,22 +221,35 @@ int http_headers(int fd, int status, char *status_str, int content_type, size_t 
 	return 1;
 }
 
+void normalise_host_suffix(char *hostname, size_t size) {
+	if (!strchr(hostname, '.')) {
+		strncat(hostname, DOMAIN_SUFFIX, size);
+	}
+}
+
 /* check if the given request host matches any of this servers' hostnames
  */
 int host_match(const char *request) {
-	char hostname[1024], hostreq[1024];
+	char hostname[SHORT_LINE_BUFFER + 1], hostreq[SHORT_LINE_BUFFER + 1];
 
-	sscanf(strstr(request, "Host"), "Host: %1023s", hostreq);
+	sscanf(strstr(request, "Host"), "Host: %" STR(SHORT_LINE_BUFFER) "s", hostreq);
 
+	/* strip out port number */
 	if (strchr(hostreq, ':')) {
 		*strchr(hostreq, ':') = '\0';
 	}
 
-	gethostname(hostname, sizeof(hostname));
+	/* always answer to localhost */
+	if (strcmp(hostreq, "localhost") == 0) {
+		return 1;
+	}
 
-	return (strcmp(hostreq, hostname) == 0
-			|| strcmp(hostreq, strcat(hostname, ".dcs.gla.ac.uk")) == 0
-			|| strcmp(hostreq, "localhost") == 0);
+	/* normalise host names to include .dcs.gla.ac.uk suffix */
+	gethostname(hostname, sizeof(hostname));
+	normalise_host_suffix(hostname, SHORT_LINE_BUFFER);
+	normalise_host_suffix(hostreq, SHORT_LINE_BUFFER);
+
+	return (strcmp(hostreq, hostname) == 0);
 }
 
 /* returns the file size or -1 if the file is not accessible */
@@ -228,6 +257,10 @@ size_t file_size(const char *path){
 	struct stat s;
 
 	if( stat(path, &s) != 0) {
+		return 0;
+	} else if (!S_ISREG(s.st_mode)) {
+		/* not a regular file (e.g. directory or symlink) */
+		errlog("not a regular file");
 		return 0;
 	} else {
 		return (size_t) s.st_size;
@@ -238,14 +271,17 @@ size_t file_size(const char *path){
  * user must guarantee that path is always \0 terminated. */
 enum http_mime file_mime(char *path){
 	char *c, *ext;
-	
+
+	ext = 0;
 	for (c = path; *c != '\0'; c++) {
 		if (*c == '.') {
 			ext = c + 1;
 		}
 	}
 
-	if (strcasecmp(ext, "txt") == 0){
+	if (ext == 0) {
+		return MIME_APPLICATION_OCTET_STREAM; /* no extension in filename, assume binary file */
+	}else if (strcasecmp(ext, "txt") == 0){
 		return MIME_TEXT_PLAIN;
 	} else if (strcasecmp(ext, "htm") == 0 || strcasecmp(ext, "html") == 0) {
 		return MIME_TEXT_HTML;
@@ -272,7 +308,7 @@ int respond_string(int fd, char *response) {
 /* copy a file to the connection file descriptor
  */
 int respond_file(int fd, char *path) {
-	char writebuf[1024*1024]; /* TODO #define this*/
+	char writebuf[FILE_COPY_BUFFER];
 	FILE *docfd;
 	size_t count;
 	ssize_t written;
@@ -294,6 +330,7 @@ int respond_file(int fd, char *path) {
 			}
 		}
 	}
+
 	fclose(docfd);
 	return 1;
 }
@@ -303,7 +340,7 @@ int respond_file(int fd, char *path) {
  */ 
 int handle_request(int fd, char *request) {
 	char *response, *status_str;
-	char path[1024]; 
+	char path[SHORT_LINE_BUFFER + 1]; /* +1 to allow for \0 */
 	size_t content_length = 0;
 	enum http_status status = HTTP_OK;
 	enum http_mime mime = MIME_TEXT_HTML;
@@ -312,21 +349,18 @@ int handle_request(int fd, char *request) {
 	/* parse request data */
 	errlog(request);
 
-	if( sscanf(request, "GET /%1023s HTTP/1.1", path) != 1 ) {
+	if( sscanf(request, "GET /%" STR(SHORT_LINE_BUFFER) "s HTTP/1.1", path) != 1 ) {
 		/* we only support GET, so might as well hard code it... */
 		status = HTTP_BAD_REQUEST;
-		errlog("request does not match GET /%as HTTP/1.1");
+		errlog("Unsupported request method, HTTP version, or header format.");
 	} else if (!host_match(request)) {
-		/* unknown host */
 		errlog("hostname does not match");
 		status = HTTP_BAD_REQUEST;	
 	} else if (path[0] == '.' || path[0] == '/') {
-		/* path definitely outside document root. */
 		errlog("invalid path, cannot start with . or /");
 		status = HTTP_BAD_REQUEST;
 	} else if ((content_length = file_size(path)) == 0) {
-		/* file not found or un-stat-able */
-		errlog("file not found");
+		errlog("file not found or invalid");
 		status = HTTP_NOT_FOUND;
 	} else {
 		printf("--- Thread %lu serving request for %s.\n", pthread_self() % 1000, path);
@@ -373,6 +407,7 @@ int handle_request(int fd, char *request) {
 	} else {
 		if(!respond_string(fd, response)) {
 			errlog("writing error message failed. abandoning request.");
+			return 0;
 		}
 	}
 
