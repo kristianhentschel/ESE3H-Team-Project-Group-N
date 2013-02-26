@@ -1,6 +1,7 @@
 #include "threadpool.h"
 #include <assert.h>
-#define TP_BUF_SIZE 10
+
+#define TP_BUF_SIZE 1
 struct tp {
 	unsigned nthreads;
 	unsigned buffer_size;
@@ -66,6 +67,7 @@ TP tp_init(unsigned nthreads, void (*free_item)(void*), void (*worker)(void*)) {
 	return tp;
 }
 
+/* TODO this is completely untested as the server is currently meant to be running forever. */
 void tp_destroy(TP tp) {
 	unsigned i;
 	void *item;
@@ -86,7 +88,7 @@ void tp_destroy(TP tp) {
 		tp->free_item(item);
 	}
 
-	/* destroy wtb data structure and locks */
+	/* destroy thread pool data structure and locks */
 	pthread_mutex_lock(&tp->lock);
 	pthread_mutex_destroy(&tp->lock);
 	pthread_cond_destroy(&tp->nonfull);
