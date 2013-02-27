@@ -5,44 +5,34 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
-#include <netdb.h>
 
-#define UDP_PORT 5008
-#define STR_PORT "5008"
+#define UDP_PORT 5010
+#define GROUP_ADDR "224.0.0.20"
 #define BUF_SIZE 1024
 
 int main (int argc, char *argv[]){
-	int sockfd, r;
-	char buffer[] = "Hello World!";
-	struct addrinfo hints;
-	struct addrinfo *addr;
+	int sockfd;
+	struct sockaddr_in addr;
 	ssize_t count;
-	char *hostname;
 
 	if (argc < 2) {
-		printf("usage: %s hostname\n", argv[0]);
-		return 1;
-	}
-	hostname = argv[1];
-
-	/* use first address returned by getaddrinfo as per handout. */
-	memset(&hints, 0, sizeof(hints));
-	hints.ai_family		 = AF_UNSPEC;
-	hints.ai_socktype	 = SOCK_DGRAM;
-
-	if ((r = getaddrinfo(hostname, STR_PORT, &hints, &addr) != 0)) {
-		printf("DNS lookup failed: %s\n", gai_strerror(r));
+		printf("usage: %s message\n", argv[0]);
 		return 1;
 	}
 
 	sockfd = socket(AF_INET, SOCK_DGRAM, 0);
 	if (sockfd < 0) {
-		printf("connection failed\n");
+		printf("could not open socket\n");
 		return 1;
 	}
 
-	count = sendto(sockfd, buffer, sizeof(buffer), 0, addr->ai_addr, addr->ai_addrlen);
-	
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_port = UDP_PORT;
+	inet_pton(AF_INET, GROUP_ADDR, &addr.sin_addr);
+
+	/* TODO fill buffer with given format (FROM getlogin()\n Message \n) */
+
+	count = sendto(sockfd, argv[1], sizeof(argv[1]), 0, (struct sockaddr *) &addr, sizeof(addr));
 	if (count < 0) {
 		perror("sendto failed");
 	}
