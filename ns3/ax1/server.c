@@ -36,7 +36,7 @@
 
 /* Debugging - uncomment one of these to turn prints on or off */
 #define DEBUG printf
-/* #define DEBUG void */
+/* #define DEBUG (void) */
 
 /* General server performance settings */
 #define SERVER_PORT 8080
@@ -74,10 +74,6 @@ int main(void) {
 	socklen_t			cliaddrlen = sizeof(cliaddr);
 	TP	tp;
 	
-	/* set up all shared data structures for threading */
-	printf("Initialising thread pool with %d threads\n", NTHREADS);
-	tp = tp_init(NTHREADS, &close_connection, &connection_worker);
-
 
 	/* allocate a socket */
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -103,6 +99,10 @@ int main(void) {
 		close(sockfd);
 		return 1;
 	}
+
+	/* set up all shared data structures for threading */
+	DEBUG("Initialising thread pool with %d threads\n", NTHREADS);
+	tp = tp_init(NTHREADS, &close_connection, &connection_worker);
 
 	/* accept (blocks until a client connects) */
 	while(1) {
