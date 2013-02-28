@@ -55,7 +55,7 @@ void init_network_driver(NetworkDevice               nd,
 	}
 
 	for (i = 0; i < APP_COUNT; i++) {
-		if ((TX = createBB( RX_BUF_SIZE )) == NULL) {
+		if ((RX[i] = createBB( RX_BUF_SIZE )) == NULL) {
 			DIAGNOSTICS("could not create bounded buffer for RX (%d) buffer.\n", i);
 		}
 	}
@@ -74,26 +74,33 @@ void init_network_driver(NetworkDevice               nd,
 
 void *thread_packet_receiver(void *arg) {
 	PID pid;
-	PacketDescriptor *pd, bufpd;
+	PacketDescriptor pd, bufpd;
 	NetworkDevice nd;
 	int status;
+
+	DIAGNOSTICS("Receive: Initialised thread, waiting to get buffer packet descriptor.\n");
+	blocking_get_pd(FPDS, &bufpd);
 
 	nd = (NetworkDevice) arg;
 
 	while(1) {
 		/* use our own static packet descriptor here. */
+		DIAGNOSTICS("Receive: Initialising buffer pd\n");
 		init_packet_descriptor(&bufpd);
+
+		DIAGNOSTICS("Receive: Registering receiving pd\n");
 		register_receiving_packetdescriptor(nd, &bufpd);
 		
 		/* blocks until packet received from network. */
+		DIAGNOSTICS("Receive: Waiting for network packet.\n");
 		await_incoming_packet(nd);
 		
 		/* copy the packet into a packet descriptor taken from the free packet descriptor store */
-		if (nonblocking_get_pd(FPDS, pd)) {
-			DIAGNOSTICS("Receive: Dropped packet as Free Packet Descriptor was empty.");
+		if (nonblocking_get_pd(FPDS, &pd)) {
+			DIAGNOSTICS("Receive: Dropped packet as Free Packet Descriptor was empty.\n");
 			continue;
 		} else {
-			memcpy(pd, &bufpd, sizeof(bufpd));
+			memcpy(&pd, &bufpd, sizeof(bufpd));
 		}
 
 		/* attempt to put the packet descriptor into the process's rx buffer */
@@ -118,6 +125,7 @@ void *thread_packet_transmitter(void *arg) {
 
 	nd = (NetworkDevice) arg;
 
+	DIAGNOSTICS("Transmit: Thread initialised.\n");
 	while (1) {
 		pd = blockingReadBB(TX);
 		retries = MAX_RETRIES;
@@ -125,13 +133,13 @@ void *thread_packet_transmitter(void *arg) {
 			tx_status = send_packet(nd, pd);
 			retries--;
 			
-			DIAGNOSTICS("Transmit: Attempted to send. tx_status: %d, retries: %d", tx_status, retries);
+			DIAGNOSTICS("Transmit: Attempted to send. tx_status: %d, retries: %d\n", tx_status, retries);
 			if (tx_status == 1) {
 				break;
 			}
 			
 			if (retries == 0) {
-				DIAGNOSTICS("Transmit: Packet dropped after retries exceeded.");
+				DIAGNOSTICS("Transmit: Packet dropped after retries exceeded.\n");
 			}
 		}
 		
@@ -141,19 +149,23 @@ void *thread_packet_transmitter(void *arg) {
 }
 
 void blocking_send_packet(PacketDescriptor pd) {
+	DIAGNOSTICS("Send: Blocking\n");
 	blockingWriteBB(TX, pd);
 }
 
 int nonblocking_send_packet(PacketDescriptor pd) {
+	DIAGNOSTICS("Send: Non-Blocking\n");
 	return nonblockingWriteBB(TX, pd);
 }
 
 void blocking_get_packet(PacketDescriptor *pd, PID pid) {
+	DIAGNOSTICS("Get: Blocking\n");
 	assert(pid <= APP_COUNT);
 	*pd = blockingReadBB(RX[pid]);
 }
 
 int nonblocking_get_packet(PacketDescriptor *pd, PID pid) {
+	DIAGNOSTICS("Get: Non-Blocking\n");
 	assert(pid <= APP_COUNT);
 	return nonblockingReadBB(RX[pid], pd);
 }
