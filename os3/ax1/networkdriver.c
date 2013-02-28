@@ -76,39 +76,39 @@ void *thread_packet_receiver(void *arg) {
 	PID pid;
 	PacketDescriptor pd, bufpd;
 	NetworkDevice nd;
-	int status;
 
+	/* TODO this might block (deadlock?) if applications have acquired all the free packet descriptors from the store
+	 * before this gets scheduled. Only really deadlocks if network device doesn't serve send requests before reads.
+	 * might solve this by setting one aside and handing it to this thread before returning the fpds_ptr in init().
+	 * */
 	DIAGNOSTICS("Receive: Initialised thread, waiting to get buffer packet descriptor.\n");
 	blocking_get_pd(FPDS, &bufpd);
 
 	nd = (NetworkDevice) arg;
 
 	while(1) {
-		/* use our own static packet descriptor here. */
-		DIAGNOSTICS("Receive: Initialising buffer pd\n");
+		/* use the previously acquired buffer */
 		init_packet_descriptor(&bufpd);
-
-		DIAGNOSTICS("Receive: Registering receiving pd\n");
 		register_receiving_packetdescriptor(nd, &bufpd);
 		
 		/* blocks until packet received from network. */
 		DIAGNOSTICS("Receive: Waiting for network packet.\n");
 		await_incoming_packet(nd);
-		
-		/* copy the packet into a packet descriptor taken from the free packet descriptor store */
-		if (nonblocking_get_pd(FPDS, &pd)) {
-			DIAGNOSTICS("Receive: Dropped packet as Free Packet Descriptor was empty.\n");
+	
+		/* copy the packet into a new packet descriptor taken from the free packet descriptor store */
+		pd = bufpd;
+		if (nonblocking_get_pd(FPDS, &bufpd)) {
+			DIAGNOSTICS("Receive: Dropped packet as Free PD Store was empty.\n");
 			continue;
-		} else {
-			memcpy(&pd, &bufpd, sizeof(bufpd));
-		}
+		} 
 
 		/* attempt to put the packet descriptor into the process's rx buffer */
-		pid = packet_descriptor_get_pid(pd);
-		status = nonblockingWriteBB(RX[pid], pd);
-		if (!status) {
+		pid = packet_descriptor_get_pid(&pd);
+		if (!nonblockingWriteBB(RX[pid], pd)) {
 			DIAGNOSTICS("Receive: Dropped packet as RX buffer for PID %d is full.\n", pid);
 			continue;
+		} else {
+			DIAGNOSTICS("Receive: Got packet and successfully stored it in RX buffer for PID %d.\n", pid);
 		}
 
 	}
