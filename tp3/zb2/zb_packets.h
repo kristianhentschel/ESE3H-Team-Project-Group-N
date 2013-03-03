@@ -31,7 +31,8 @@ enum zb_parse_response {
 	ZB_PARSING,
 	ZB_PLAIN_WORD,
 	ZB_START_PACKET,
-	ZB_VALID_PACKET
+	ZB_VALID_PACKET,
+	ZB_INVALID_PACKET
 };
 
 /* enters command mode. It is the user's responsibility to exit from this by letting the timeout expire or sending an ATCN command. */

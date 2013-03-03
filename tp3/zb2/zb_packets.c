@@ -72,7 +72,7 @@ void zb_send_command(char cmd[2], char *data, unsigned char len) {
  */
 void zb_send_packet(char op, char *data, char len) {
 	char buf[MAX_PACKET_SIZE];
-	unsigned char n, i;
+	unsigned char n, i, chk;
 
 	n = 0;
 	buf[n++] = PACKET_DELIMETER;
@@ -81,26 +81,26 @@ void zb_send_packet(char op, char *data, char len) {
 	buf[n++] = len;
 	
 	for (i = 0; i < len; i++) {
-		buf[n] = data[n];
+		buf[n] = data[i];
 		n++;
 	}
 	
-	buf[n] = zb_checksum(&buf[1], n-1);
-
+	chk = zb_checksum(buf, n);
+	buf[n++] = chk;
 
 	zb_send(buf, n);
 }
 
 /*
- * use same checksum algorithm defined for ZigBEE API mode:
- * add all bytes, not including delimeter and checksum.
+ * checksum: sum of all bytes except checksum and initial delimeter.
  * keeping only lower 8 bits, subtract from 0xFF.
  */
 char zb_checksum(char *buf, unsigned char len) {
 	unsigned char i, result;
 
 	result = 0;
-	for (i = 0; i < len; i++) {
+	/* start counting at one to skip packet delimeter byte. */
+	for (i = 1; i < len; i++) {
 		result += buf[i];
 	}
 
@@ -158,14 +158,17 @@ enum zb_parse_response zb_parse(char c) {
 			break;
 		case LEX_PACKET_OP:
 			zb_packet_op = c;
+			checksum += c;
 			state = LEX_PACKET_FROM;
 			break;
 		case LEX_PACKET_FROM:
 			zb_packet_from = c;
+			checksum += c;
 			state = LEX_PACKET_LENGTH;
 			break;
 		case LEX_PACKET_LENGTH:
 			zb_packet_len = c;
+			checksum += c;
 			state = LEX_PACKET_DATA;
 			break;
 		case LEX_PACKET_DATA:
@@ -179,8 +182,11 @@ enum zb_parse_response zb_parse(char c) {
 			break;
 		case LEX_PACKET_CHECKSUM:
 			state = LEX_WAITING;
+			printf("Sum character from packet: %0x, actual sum of received bytes: %0x\n", c, 0xff-checksum);
 			if (0xFF - checksum == c) {
 				return ZB_VALID_PACKET;
+			} else {
+				return ZB_INVALID_PACKET;
 			}
 		default:
 			break;
