@@ -16,6 +16,9 @@
 /* opens the serial device and initialises any receive buffer structures. */
 void zb_transport_init();
 
+/* closes the serial device connection and destroys the buffers if required. */
+void zb_transport_stop();
+
 /* sends a complete data packet over the serial line */
 void zb_send(char *buf, char len);
 
