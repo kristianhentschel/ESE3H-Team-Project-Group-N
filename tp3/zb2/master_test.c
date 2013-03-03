@@ -19,11 +19,14 @@ int main(void) {
 	zb_transport_init();
 
 	zb_enter_command_mode();
-	zb_send_command("NI", NULL, 0);
-	zb_send_command("CN", NULL, 0);
+	zb_send_command("NI");
+	zb_send_command("CN");
 
 	zb_send_packet(42, "Hello World", 12);
+
+	/* TODO shouldn't have to do this, but receiver needs one more character for some reason, even with packets. */
 	zb_send("\n", 1);
+
 	while(1){
 		c = zb_getc();
 		printf("%0x ", c);
@@ -37,7 +40,7 @@ int main(void) {
 				printf("\n(plain word of %d characters)\n", zb_word_len);
 				break;
 			case ZB_VALID_PACKET:
-				printf("\n(valid packet of %d characters: '%s')\n", zb_packet_len, strndup(zb_packet_data, zb_packet_len));
+				printf("\n(valid packet of %d characters with op code %x from device %x: '%s')\n", zb_packet_len, zb_packet_op, zb_packet_from, strndup(zb_packet_data, zb_packet_len));
 				break;
 			case ZB_INVALID_PACKET:
 				printf("\n(invalid packet)\n");

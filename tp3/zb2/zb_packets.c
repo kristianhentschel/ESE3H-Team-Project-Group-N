@@ -41,7 +41,7 @@ void zb_enter_command_mode() {
  * "AT" cmd data "\r\n"
  * data can be NULL, in that case a command without parameter (read or action) is sent.
  */
-void zb_send_command(char cmd[2], char *data, unsigned char len) {
+void zb_send_command_with_argument(char cmd[2], char *data, unsigned char len) {
 	char buf[MAX_PACKET_SIZE];
 	unsigned char n, i;
 
@@ -66,6 +66,12 @@ void zb_send_command(char cmd[2], char *data, unsigned char len) {
 	printf("sent command %s\n", buf);
 }
 
+/*
+ * wrapper to send a simple command without an argument
+ */
+void zb_send_command(char cmd[2]) {
+	zb_send_command_with_argument(cmd, NULL, 0);
+}
 
 /*
  * assembles a full packet with sender address, length, checksum
