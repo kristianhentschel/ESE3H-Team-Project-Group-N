@@ -1,4 +1,4 @@
-CFLAGS = -W -Wall -Wconversion -pedantic
+CFLAGS = -W -Wall -pedantic
 CC = gcc
 
 all: master_test scale_test 
