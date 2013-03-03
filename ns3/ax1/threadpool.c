@@ -149,7 +149,7 @@ static void *tp_worker(void *arg) {
 		/* wait for and retrieve work */
 		pthread_mutex_lock(&tp->lock);
 		
-		printf("WORKER: blocking until work is available\n");
+		printf("WORKER: %lu now idle\n", pthread_self() % 1000);
 		while (tp->nextwork == NULL && !tp->selfdestruct) {
 			pthread_cond_wait(&tp->workavailable, &tp->lock);
 		}

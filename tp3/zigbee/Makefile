@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 CFLAGS = -g -W -Wall
 
 all: zb_test
@@ -11,3 +12,6 @@ zigbee.o: zigbee.c
 
 clean:
 	rm -f zb_test *.o
+=======
+zigbee.o: zigbee.c
+>>>>>>> b5875d401c6bfe4bc1f4f0ec039013aef91be082

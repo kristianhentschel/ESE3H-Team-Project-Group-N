@@ -1,16 +1,16 @@
-CFLAGS = -W -Wall -pedantic -lpthread -g
+CFLAGS = -W -Wextra -Wall -Wconversion -pedantic -g
 CC = gcc
 
-all: server
+all: server 
 
-server: server.o linkedstringbuffer.o threadpool.o 
-	${CC} ${CFLAGS} server.o linkedstringbuffer.o threadpool.o -o server
+server: server.o linkedstringbuffer.o bufferthreadpool.o 
+	${CC} -lpthread ${CFLAGS} server.o linkedstringbuffer.o bufferthreadpool.o -o server
 
 server.o: server.c linkedstringbuffer.h networking.h threadpool.h
 
 linkedstringbuffer.o: linkedstringbuffer.c linkedstringbuffer.h
 
-threadpool.o: threadpool.c threadpool.c
+bufferthreadpol.o: bufferthreadpool.c threadpool.h
 
 clean:
-	rm -f server *.exe *.o
+	rm -f server *.o

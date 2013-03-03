@@ -1,5 +1,5 @@
 #include "zigbee.h"
-
+#include <stdio.h>
 /*
  * wraps a payload in a frame that includes the delimeter, length, and checksum bytes.
  */
@@ -23,7 +23,7 @@ int zb_frame(const char *payload, char *buf) {
 	buf[2] = (len & 0x00ff);
 	
 	buf[n++] = zb_checksum(payload);
-	buf[n] = '\0';
+	buf[n] = FRAME_DELIMETER;
 
 	return n;
 }
@@ -34,11 +34,13 @@ int zb_frame(const char *payload, char *buf) {
 char zb_checksum(const char *payload) {
 	char sum;
    	const char *p;
-	
-	for (p = payload; *p != '\0'; p++) {
+
+	sum = 0;	
+	for (p = payload; *p != FRAME_DELIMETER; p++) {
 		sum += *p;
 	}
 
+	printf("Checksum: %02x\n", (0xFF-sum));
 	return 0xFF - sum;
 }
 
@@ -90,7 +92,7 @@ char *zb_AT_payload( const char *cmd, const char *val, char *buf ) {
 	n = 0;
 
 	buf[n++] = ZB_API_ATCMD;
-	buf[n++] = 0x00; /* frame id we don't care about yet */
+	buf[n++] = 0x01; /* frame id we don't care about yet */
 	buf[n++] = cmd[0];
 	buf[n++] = cmd[1];
 

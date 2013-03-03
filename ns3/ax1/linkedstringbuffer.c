@@ -1,3 +1,12 @@
+/*
+ * Author: Kristian Hentschel
+ * Matric: 1003734h
+ * Submission: Networked Systems 3 Assessed Exercise 1
+ *
+ * This file is my own work.
+ *
+ * Implements a dynamically allocated string buffer that can grow to almost any size as required, without copying previously allocated memory around too much.
+ */
 #include "linkedstringbuffer.h"
 #include <stdlib.h>
 #include <string.h>
@@ -8,7 +17,7 @@ struct lsb_node {
 };
 
 struct lsb_struct {
-	long size;
+	size_t size;
 	struct lsb_node *head;
 	struct lsb_node *tail;
 };
@@ -74,7 +83,7 @@ char *lsb_string(lsb l) {
 
 /* adds another \0 delimited string to the buffer, copying it into a malloc'd string. */
 void lsb_add(lsb l, const char *s) {
-	int size;
+	size_t size;
 	struct lsb_node *node;
 
 	node = lsb_node_create();

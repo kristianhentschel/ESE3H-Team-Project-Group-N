@@ -1,3 +1,11 @@
+/*
+ * Author: Kristian Hentschel
+ * Matric: 1003734h
+ * Submission: Networked Systems 3 Assessed Exercise 1
+ *
+ * This file is my own work.
+ */
+
 #ifndef __THREADPOOL_H__
 #define __THREADPOOL_H__
 
