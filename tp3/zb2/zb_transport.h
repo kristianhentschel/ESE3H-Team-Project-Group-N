@@ -13,11 +13,11 @@
  *
  */
 
-/* opens the serial device and initialises the receive buffer structures. */
-void zb_init();
+/* opens the serial device and initialises any receive buffer structures. */
+void zb_transport_init();
 
 /* sends a complete data packet over the serial line */
-void zb_send(char *buf, int len);
+void zb_send(char *buf, char len);
 
 /* blocks until a character is available in the serial buffer */
 char zb_getc();
