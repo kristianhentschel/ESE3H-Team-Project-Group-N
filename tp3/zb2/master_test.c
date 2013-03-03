@@ -24,9 +24,6 @@ int main(void) {
 
 	zb_send_packet(42, "Hello World", 12);
 
-	/* TODO shouldn't have to do this, but receiver needs one more character for some reason, even with packets. */
-	zb_send("\n", 1);
-
 	while(1){
 		c = zb_getc();
 		printf("%0x ", c);

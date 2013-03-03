@@ -93,7 +93,7 @@ void zb_send_packet(char op, char *data, char len) {
 	
 	chk = zb_checksum(buf, n);
 	buf[n++] = chk;
-
+	buf[n++] = '\n';
 	zb_send(buf, n);
 }
 

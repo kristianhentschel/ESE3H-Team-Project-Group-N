@@ -91,6 +91,7 @@ void zb_transport_stop() {
 
 void zb_send(char *buf, unsigned char len) {
 	write(serial_fd, buf, len);
+	fsync(serial_fd);
 }
 
 /* take a character from the buffer if it's not empty
