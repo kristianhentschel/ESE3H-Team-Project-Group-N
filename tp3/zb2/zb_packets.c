@@ -2,9 +2,14 @@
 #include "zb_transport.h"
 
 #include <string.h>
+#include <ctype.h>
 
-#define DEVICE_ID 0x01;
+/* TODO define this somewhere more sensible, maybe in its own header file? */
+#ifndef DEVICE_ID
+#define DEVICE_ID 0x01
+#endif
 
+#define PACKET_DELIMETER 0x7E
 /*
  * zb_packets.h
  *
@@ -50,7 +55,7 @@ void zb_send_command(char cmd[2], char *data, char len) {
 	}
 
 	buf[n++] = '\r';
-	buf[n] = '\n'; /* TODO check which character is officially required */
+	buf[n] = '\n'; /* TODO check which character is officially required for terminating an AT Command. */
 
 	zb_send(buf, n);
 }
@@ -102,4 +107,75 @@ char zb_checksum(char *buf, char len) {
  *
  * store results in global variables defined in header file.
  */
-enum zb_parse_response zb_parse(char c);
+enum zb_parse_state = {LEX_WAITING, LEX_IN_WORD, LEX_PACKET_OP, LEX_PACKET_FROM, LEX_PACKET_LENGTH, LEX_PACKET_DATA, LEX_PACKET_CHECKSUM};
+
+enum zb_parse_response zb_parse(char c) {
+	static char checksum;
+	static char packet_data_count;
+	static enum zb_parse_state state;
+
+	/* see the start of a packet - discard everything else.
+	 * the delimeter character is illegal in data except in a checksum.
+	 */
+
+	if (state != LEX_PACKET_CHECKSUM && c == PACKET_DELIMETER) {
+		state = LEX_PACKET_OP;
+		checksum = 0;
+		packet_data_count = 0;
+		
+		zb_packet_op = 0;
+		zb_packet_from = 0;
+		zb_packet_len = 0;
+
+		return ZB_START_PACKET;
+	}
+
+	switch (state) {
+		case LEX_WAITING:
+			if (isalnum(c)) {
+				zb_word_data[0] = c;
+				zb_word_len = 1;
+				state = LEX_IN_WORD;
+			}
+			break;
+		case LEX_IN_WORD:
+			if (isalnum(c)) {
+				zb_word_data[zb_word_len++] = c;
+				state = LEX_IN_WORD;
+			} else {
+				state = LEX_WAITING;
+				return ZB_PLAIN_WORD;
+			}
+			break;
+		case LEX_PACKET_OP:
+			zb_packet_op = c;
+			state = LEX_PACKET_FROM;
+			break;
+		case LEX_PACKET_FROM:
+			zb_packet_from = c;
+			state = LEX_PACKET_LENGTH;
+			break;
+		case LEX_PACKET_LENGTH:
+			zb_packet_len = c;
+			state = LEX_PACKET_DATA;
+			break;
+		case LEX_PACKET_DATA:
+			zb_packet_data[packet_data_count++] = c;
+			checksum += c;
+			if (packet_data_count == zb_packet_len) {
+				state = LEX_PACKET_CHECKSUM;
+			} else {
+				state = LEX_PACKET_DATA;
+			}
+			break;
+		case LEX_PACKET_CHECKSUM:
+			state = LEX_WAITING;
+			if (0xFF - checksum == c) {
+				return ZB_VALID_PACKET;
+			}
+		default:
+			break;
+	}
+
+	return ZB_PARSING;
+}

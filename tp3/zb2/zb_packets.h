@@ -22,8 +22,9 @@ char	zb_word_data[MAX_PACKET_SIZE]
 int		zb_word_len;
 
 char	zb_packet_data[MAX_PACKET_SIZE];
-int 	zb_packet_from;
-int		zb_packet_len;
+char	zb_packet_op;
+char	zb_packet_from;
+char	zb_packet_len;
 
 /* return type of parser function */
 enum zb_parse_response = {
