@@ -22,7 +22,7 @@ int main(void) {
 	zb_send_command("NI", NULL, 0);
 	zb_send_command("CN", NULL, 0);
 
-	zb_send("Hello World", 12);
+	zb_send_packet(42, "Hello World", 12);
 
 	while(1){
 		c = zb_getc();
