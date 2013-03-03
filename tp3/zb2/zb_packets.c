@@ -54,7 +54,7 @@ void zb_send_command(char cmd[2], char *data, unsigned char len) {
 		}
 	}
 
-	buf[n++] = '\r';
+	buf[n++] = '\n';
 	buf[n] = '\n'; /* TODO check which character is officially required for terminating an AT Command. */
 
 	zb_send(buf, n);

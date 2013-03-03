@@ -17,9 +17,14 @@ int main(void) {
 
 	zb_transport_init();
 
+	zb_enter_command_mode();
+	zb_send_command("NI", NULL, 0);
+	zb_send_command("CN", NULL, 0);
+
 	while(1){
 		c = zb_getc();
 		printf("%c", c);
+		fflush(stdout);
 
 		switch (zb_parse(c)) {
 			case ZB_START_PACKET:

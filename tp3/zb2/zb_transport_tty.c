@@ -46,25 +46,24 @@ static int serial_fd;
  */
 void zb_transport_init() {
 	struct termios tc;
-	int fd;
 
 	/* open serial port */
-	fd = open(SERIAL_DEVICE, O_RDWR | O_NOCTTY | O_NDELAY);
-	if (fd < 0) {
+	serial_fd = open(SERIAL_DEVICE, O_RDWR | O_NOCTTY | O_NDELAY);
+	if (serial_fd < 0) {
 		printf("[CRITICAL] could not open serial device %s\n", SERIAL_DEVICE);
 	}
 
-	fcntl(fd, F_SETFL, 0);
+	fcntl(serial_fd, F_SETFL, 0);
 	
 	/* set tc options for serial port transfers */
-	tcgetattr(fd, &tc);
+	tcgetattr(serial_fd, &tc);
 
 	cfsetospeed(&tc, 9600);
 	cfsetispeed(&tc, 9600);
 	tc.c_cflag |= (CLOCAL | CREAD);
 	tc.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
 
-	tcsetattr(fd, TCSANOW, &tc);
+	tcsetattr(serial_fd, TCSANOW, &tc);
 
 	/* set up buffer structures and locks */
 	pthread_mutex_init(&RX_buffer.lock, NULL);
@@ -73,14 +72,14 @@ void zb_transport_init() {
 	pthread_cond_init(&RX_buffer.nonfull, NULL);
 	pthread_cond_init(&RX_buffer.nonempty, NULL);
 
-	RX_buffer.count = RX_BUFFER_SIZE;
+	RX_buffer.count = 0;
 	RX_buffer.last = 0;
 	RX_buffer.first = 0;
 
 	pthread_mutex_unlock(&RX_buffer.lock);
 
 	/* start receiving thread to fill the buffer */	
-	pthread_create(&pthread_receiver, NULL, serial_monitor, (void *) fd);
+	pthread_create(&pthread_receiver, NULL, serial_monitor, NULL); 
 }
 
 /* close serial device, destroy any threads and locks (TODO do it properly) */
@@ -101,6 +100,7 @@ char zb_getc() {
 	char c;
 
 	pthread_mutex_lock(&RX_buffer.lock);
+
 	while (RX_buffer.count == 0) {
 		pthread_cond_wait(&RX_buffer.nonempty, &RX_buffer.lock);
 	}
@@ -125,6 +125,7 @@ void zb_guard_delay() {
 static void *serial_monitor(void *arg) {
 	char c;
 
+	printf("starting to read\n");
 	while (read(serial_fd, &c, 1) > 0) {
 		pthread_mutex_lock(&RX_buffer.lock);
 		while (RX_buffer.count == RX_BUFFER_SIZE) {

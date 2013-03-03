@@ -10,4 +10,4 @@ scale_test: scale_test.o zb_packets.o zb_transport_tty.o
 	gcc -o scale_test -lpthread scale_test.o zb_packets.o zb_transport_tty.o
 
 clean:
-	rm -f *.o master_test scale_test scale_test_tty
+	rm -f *.exe *.o master_test scale_test scale_test_tty
