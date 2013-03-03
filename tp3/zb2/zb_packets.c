@@ -20,7 +20,7 @@
  *
  */
 
-static zb_checksum(char *buf, char len);
+static char zb_checksum(char *buf, unsigned char len);
 
 /*
  * send command mode sequence within guard times of 1 second silence.
@@ -39,9 +39,9 @@ void zb_enter_command_mode() {
  * "AT" cmd data "\r\n"
  * data can be NULL, in that case a command without parameter (read or action) is sent.
  */
-void zb_send_command(char cmd[2], char *data, char len) {
+void zb_send_command(char cmd[2], char *data, unsigned char len) {
 	char buf[MAX_PACKET_SIZE];
-	char n, i;
+	unsigned char n, i;
 
 	n = 0;
 	buf[n++] = cmd[0];
@@ -64,20 +64,23 @@ void zb_send_command(char cmd[2], char *data, char len) {
 /*
  * assembles a full packet with sender address, length, checksum
  */
-void zb_send_packet(char type, char *data, char len) {
+void zb_send_packet(char op, char *data, char len) {
 	char buf[MAX_PACKET_SIZE];
-	char n, i;
+	unsigned char n, i;
 
 	n = 0;
 	buf[n++] = PACKET_DELIMETER;
+	buf[n++] = op;
 	buf[n++] = DEVICE_ID;
 	buf[n++] = len;
 	
 	for (i = 0; i < len; i++) {
-		buf[n++] = data[n];
+		buf[n] = data[n];
+		n++;
 	}
 	
 	buf[n] = zb_checksum(&buf[1], n-1);
+
 
 	zb_send(buf, n);
 }
@@ -87,8 +90,8 @@ void zb_send_packet(char type, char *data, char len) {
  * add all bytes, not including delimeter and checksum.
  * keeping only lower 8 bits, subtract from 0xFF.
  */
-char zb_checksum(char *buf, char len) {
-	char i, result;
+char zb_checksum(char *buf, unsigned char len) {
+	unsigned char i, result;
 
 	result = 0;
 	for (i = 0; i < len; i++) {
@@ -107,11 +110,11 @@ char zb_checksum(char *buf, char len) {
  *
  * store results in global variables defined in header file.
  */
-enum zb_parse_state = {LEX_WAITING, LEX_IN_WORD, LEX_PACKET_OP, LEX_PACKET_FROM, LEX_PACKET_LENGTH, LEX_PACKET_DATA, LEX_PACKET_CHECKSUM};
+enum zb_parse_state {LEX_WAITING, LEX_IN_WORD, LEX_PACKET_OP, LEX_PACKET_FROM, LEX_PACKET_LENGTH, LEX_PACKET_DATA, LEX_PACKET_CHECKSUM};
 
 enum zb_parse_response zb_parse(char c) {
-	static char checksum;
-	static char packet_data_count;
+	static unsigned char checksum;
+	static unsigned char packet_data_count;
 	static enum zb_parse_state state;
 
 	/* see the start of a packet - discard everything else.
@@ -132,14 +135,14 @@ enum zb_parse_response zb_parse(char c) {
 
 	switch (state) {
 		case LEX_WAITING:
-			if (isalnum(c)) {
+			if (isalnum((int) c)) {
 				zb_word_data[0] = c;
 				zb_word_len = 1;
 				state = LEX_IN_WORD;
 			}
 			break;
 		case LEX_IN_WORD:
-			if (isalnum(c)) {
+			if (isalnum((int) c)) {
 				zb_word_data[zb_word_len++] = c;
 				state = LEX_IN_WORD;
 			} else {

@@ -3,8 +3,9 @@
 #include <termios.h>
 #include <fcntl.h>
 #include <pthread.h>
+#include <stdio.h>
 
-#define RECEIVE_BUFFER_SIZE 256
+#define RX_BUFFER_SIZE 256
 #define SERIAL_DEVICE "/dev/ttyAMA0"
 #define SERIAL_BAUD_RATE 9600
 
@@ -31,7 +32,7 @@ typedef struct buffer {
 	int count;
 	int last;
 	int first;
-	char elements[RECEIVE_BUFFER_SIZE];
+	char elements[RX_BUFFER_SIZE];
 } Buffer;
 
 /* global variables */
@@ -51,7 +52,6 @@ void zb_transport_init() {
 	fd = open(SERIAL_DEVICE, O_RDWR | O_NOCTTY | O_NDELAY);
 	if (fd < 0) {
 		printf("[CRITICAL] could not open serial device %s\n", SERIAL_DEVICE);
-		exit(1);
 	}
 
 	fcntl(fd, F_SETFL, 0);
@@ -67,17 +67,17 @@ void zb_transport_init() {
 	tcsetattr(fd, TCSANOW, &tc);
 
 	/* set up buffer structures and locks */
-	pthread_mutex_init(&RX_Buffer.lock, NULL);
-	pthread_mutex_lock(&RX_Buffer.lock);
+	pthread_mutex_init(&RX_buffer.lock, NULL);
+	pthread_mutex_lock(&RX_buffer.lock);
 
-	pthread_cond_init(&RX_Buffer.nonfull, NULL);
-	pthread_cond_init(&RX_Buffer.nonempty, NULL);
+	pthread_cond_init(&RX_buffer.nonfull, NULL);
+	pthread_cond_init(&RX_buffer.nonempty, NULL);
 
-	RX_Buffer.count = RECEIVE_BUFFER_SIZE;
-	RX_Buffer.last = 0;
-	RX_Buffer.first = 0;
+	RX_buffer.count = RX_BUFFER_SIZE;
+	RX_buffer.last = 0;
+	RX_buffer.first = 0;
 
-	pthread_mutex_unlock(&RX_Buffer.lock);
+	pthread_mutex_unlock(&RX_buffer.lock);
 
 	/* start receiving thread to fill the buffer */	
 	pthread_create(&pthread_receiver, NULL, serial_monitor, (void *) fd);
@@ -86,11 +86,11 @@ void zb_transport_init() {
 /* close serial device, destroy any threads and locks (TODO do it properly) */
 void zb_transport_stop() {
 	pthread_cancel(pthread_receiver);
-	pthread_join(pthread_receiver);
+	pthread_join(pthread_receiver, NULL);
 	close(serial_fd);
 }
 
-void zb_send(char *buf, char len) {
+void zb_send(char *buf, unsigned char len) {
 	write(serial_fd, buf, len);
 }
 
@@ -105,7 +105,7 @@ char zb_getc() {
 		pthread_cond_wait(&RX_buffer.nonempty, &RX_buffer.lock);
 	}
 
-	c = RX_buffer.buffer[RX_buffer.first];
+	c = RX_buffer.elements[RX_buffer.first];
 	RX_buffer.count--;
 	RX_buffer.first = (RX_buffer.first + 1) % RX_BUFFER_SIZE;
 	
@@ -133,7 +133,7 @@ static void *serial_monitor(void *arg) {
 		
 		RX_buffer.last = (RX_buffer.last + 1) % RX_BUFFER_SIZE;
 		
-		RX_buffer.buffer[RX_buffer.last] = c;
+		RX_buffer.elements[RX_buffer.last] = c;
 		RX_buffer.count++;
 		
 		pthread_cond_signal(&RX_buffer.nonempty);

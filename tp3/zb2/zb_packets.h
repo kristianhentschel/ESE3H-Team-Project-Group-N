@@ -18,7 +18,7 @@
 #define MAX_PACKET_SIZE 72
 
 /* global variables to hold parser results */
-char	zb_word_data[MAX_PACKET_SIZE]
+char	zb_word_data[MAX_PACKET_SIZE];
 int		zb_word_len;
 
 char	zb_packet_data[MAX_PACKET_SIZE];
@@ -27,7 +27,7 @@ char	zb_packet_from;
 char	zb_packet_len;
 
 /* return type of parser function */
-enum zb_parse_response = {
+enum zb_parse_response {
 	ZB_PARSING,
 	ZB_PLAIN_WORD,
 	ZB_START_PACKET,
@@ -38,7 +38,7 @@ enum zb_parse_response = {
 void zb_enter_command_mode();
 
 /* sends an AT command. Must be in command mode to use this function. if data is not NULL, it is send after a space after the command. */
-void zb_send_command(char cmd[2], char *data, char len);
+void zb_send_command(char cmd[2], char *data, unsigned char len);
 
 /* packetizes the data and sends it using the linked transport implementation. */
 void zb_send_packet(char type, char *data, char len);

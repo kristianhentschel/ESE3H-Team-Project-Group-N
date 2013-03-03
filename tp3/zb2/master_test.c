@@ -1,5 +1,6 @@
 #include "zb_transport.h"
 #include "zb_packets.h"
+#include <stdio.h>
 
 /*
  * master_test.c
@@ -14,7 +15,7 @@
 int main(void) {
 	char c;
 
-	zb_transport_open();
+	zb_transport_init();
 
 	while(1){
 		c = zb_getc();
