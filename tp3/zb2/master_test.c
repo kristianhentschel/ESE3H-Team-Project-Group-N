@@ -18,8 +18,11 @@ int main(void) {
 	zb_transport_init();
 
 	zb_enter_command_mode();
+
 	zb_send_command("NI", NULL, 0);
 	zb_send_command("CN", NULL, 0);
+
+	zb_send("Hello World", 12);
 
 	while(1){
 		c = zb_getc();

@@ -3,6 +3,7 @@
 
 #include <string.h>
 #include <ctype.h>
+#include <stdio.h>
 
 /* TODO define this somewhere more sensible, maybe in its own header file? */
 #ifndef DEVICE_ID
@@ -32,6 +33,7 @@ void zb_enter_command_mode() {
 	zb_guard_delay();
 	zb_send("+++", 3);
 	zb_guard_delay();
+	printf("entered command mode\n");
 }
 
 /*
@@ -44,6 +46,8 @@ void zb_send_command(char cmd[2], char *data, unsigned char len) {
 	unsigned char n, i;
 
 	n = 0;
+	buf[n++] = 'A'; 
+	buf[n++] = 'T';
 	buf[n++] = cmd[0];
 	buf[n++] = cmd[1];
 
@@ -54,10 +58,12 @@ void zb_send_command(char cmd[2], char *data, unsigned char len) {
 		}
 	}
 
+	buf[n++] = '\r';
 	buf[n++] = '\n';
-	buf[n] = '\n'; /* TODO check which character is officially required for terminating an AT Command. */
-
 	zb_send(buf, n);
+	
+	buf[n] = '\0';
+	printf("sent command %s\n", buf);
 }
 
 
