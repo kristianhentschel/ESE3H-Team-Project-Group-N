@@ -24,6 +24,7 @@ int main(void) {
 
 	zb_send_packet(42, "Hello World", 12);
 
+	zb_send_packet(0x01, "ping", 4);
 	while(1){
 		c = zb_getc();
 		printf("%0x ", c);

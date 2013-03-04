@@ -6,6 +6,8 @@
  * Implementation of the serial receive buffer and send methods using interrupts
  * and the STM32F4's USART peripherals.
  *
+ * Author: Kristian Hentschel
+ * Team Project 3. University of Glasgow. 2013.
  */
 
 #define ZB_USART USART_4
