@@ -1,11 +1,11 @@
 #include "zigbee.h"
-
-/* 
+#include <stdio.h>
+/*
  * wraps a payload in a frame that includes the delimeter, length, and checksum bytes.
  */
-char *zb_frame(const char *payload, char *buf) {
+int zb_frame(const char *payload, char *buf) {
 	unsigned len, n;
-	char *p;
+	const char *p;
 
 	n = 0;
 
@@ -14,30 +14,33 @@ char *zb_frame(const char *payload, char *buf) {
 	n = 3;
 	len = 0;
 
-	for (p = payload; *p != '\0'; p++) {
+	for (p = payload; *p != FRAME_DELIMETER; p++) {
 		buf[n++] = *p;
 		len++;
 	}
 	
-	buf[1] = len & 0xff00 > 8;
-	buf[2] = len & 0x00ff;
+	buf[1] = (len & 0xff00) >> 8;
+	buf[2] = (len & 0x00ff);
 	
 	buf[n++] = zb_checksum(payload);
-	buf[n] = '\0';
+	buf[n] = FRAME_DELIMETER;
 
-	return buf;
+	return n;
 }
 
 /* 
  * take a 0-delimited payload, that is, the entire API frame except for delimiter, and length bytes. Add all up, keeping lower 8 bits, subtract result from 0xff.
  */
 char zb_checksum(const char *payload) {
-	char sum, *p;
-	
-	for (p = payload; *p != '\0'; p++) {
+	char sum;
+   	const char *p;
+
+	sum = 0;	
+	for (p = payload; *p != FRAME_DELIMETER; p++) {
 		sum += *p;
 	}
 
+	printf("Checksum: %02x\n", (0xFF-sum));
 	return 0xFF - sum;
 }
 
@@ -50,7 +53,8 @@ char *zb_transmit_payload(const char frameid,
 		const uint16_t naddr,
 		const char *data,
 		char *buf) {
-	int len, n;
+	int n, i;
+	const char *p;
 	
 	n = 0;
 
@@ -63,23 +67,12 @@ char *zb_transmit_payload(const char frameid,
 	buf[n++] = 0x00; /* Broadcast radius: 0x00 = maximum, range 0x01-0x10 */
 	buf[n++] = 0x00; /* Options: 0x01 disable ACK, 0x02 disable addr discovery */
 
-	len = strlen(data);
-	for (i = 0; i < len; i++) {
-		buf[n++] = data[i];
+	for (p = data; *p != '\0'; p++) {
+		buf[n++] = *p; 
 	}
 
 	buf[n++] = '\0';
 	return buf;
-}
-
-/*
- * generates a payload for transmission to a named node previously discovered, using the network mapping table.
- */
-char *zb_transmit_payload_nodeid( const char frameid,
-		const node_t node,
-		const char *data,
-		char *buf ) {
-	return zb_transmit_payload( frameid, network_map[node].daddr, network_map[node].naddr, data, buf); 
 }
 
 /*
@@ -93,28 +86,21 @@ char *zb_transmit_payload_broadcast( const char *data, char *buf ) {
  * create a AT command request payload
  */
 char *zb_AT_payload( const char *cmd, const char *val, char *buf ) {
-	int i, n;
+	int n;
+	const char *p;
+
 	n = 0;
 
 	buf[n++] = ZB_API_ATCMD;
-	buf[n++] = 0x00; /* frame id we don't care about yet */
+	buf[n++] = 0x01; /* frame id we don't care about yet */
 	buf[n++] = cmd[0];
 	buf[n++] = cmd[1];
 
 	if (val != NULL) {
-		for (i = 0; i < strlen(val)) {
-			buf[n++] = val[i];
+		for (p = val; *p != '\0'; p++) {
+			buf[n++] = *p; 
 		}
 	}
-
-	buf[n] = '\0';
+	buf[n] = FRAME_DELIMETER;
 	return buf;
-}
-
-
-/*
- * create a node discovery request payload
- */
-char *zb_node_discovery_payload( char *buf ) {
-	return zb_AT_payload( ZB_AT_NODEDISCOVER, NULL, buf);
 }

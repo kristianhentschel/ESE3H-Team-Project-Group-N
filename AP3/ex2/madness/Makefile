@@ -13,6 +13,14 @@ ts_fifo_test.o: ts_fifo_test.c ts_fifo.h
 
 ts_fifo.o: ts_fifo.c
 
+tree.o: tree.c tree.h
+
+tree_test.o: tree_test.c tree.h iterator.h
+
+tree_test: tree_test.o tree.o iterator.o
+	${CC} -o tree_test tree_test.o tree.o iterator.o ${CFLAGS}
+
+iterator.o: iterator.c iterator.h
 
 clean:
-	rm -f *.o *.exe file_crawler ts_fifo_test
+	rm -f *.o *.exe file_crawler ts_fifo_test tree_test
