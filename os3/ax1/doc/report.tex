@@ -1,0 +1,22 @@
+\documentclass{article}
+
+\title{OS3 AX1: Status Report}
+\author{Kristian Hentschel (1003734)}
+\begin{document}
+
+\maketitle
+\section{State of Solution}
+The network driver has been fully implemented according to the specification and matches the required blocking behaviour as outlined in \texttt{design.pdf}.
+
+\section{Testing}
+Minimal testing has been done by visual inspection of the diagnostics output and examining sequences of output grepped for messages from the Receiving/Transmitting thread.
+
+\section{Known Issues}
+\begin{itemize}
+	\item The backoff algorithm should be randomized and use exponential growth rather than the linear increase (add 52.1ms after every failure.).
+	\item Using defines for buffer sizes - maybe these should be based on the actual number of applications and available free packet descriptors. The values chosen seem to work well with the provided testharness, but may not be ideal for running it with many more applications as the transmit queue is quite small.
+\end{itemize}
+
+\section{Originality}
+The file \texttt{networkdriver.c} is entirely my own work. The BoundedBuffer and FreePacketDescriptor stores were re-used and linked in from the object files provided with the exercise handout. These basic data structures are not my own work.
+\end{document}

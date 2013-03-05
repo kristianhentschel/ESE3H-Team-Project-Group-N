@@ -1,0 +1,28 @@
+\documentclass{article}
+
+\title{OS3 AX1: Design Document}
+\author{Kristian Hentschel (1003734)}
+\begin{document}
+\maketitle
+\section{System Outline}
+
+The system is built around two buffer structures.
+The transmit queue (TX) is a simple BoundedBuffer, all packets received from an application get added to it as long as there is space.
+The Receive (RX) buffer is an array of small BoundedBuffers, one for each PID. This allows order O(1) lookup, inserts, and remove for checking whether a packet is available for an application and when adding a packet received from the network.
+
+\begin{itemize}
+	\item \textbf{Receiver}: Only ever waits on the network device in an infinite loop. Uses nonblocking add to the bounded RX buffer for the respective application and nonblocking get for getting the next packet descriptor. If no free packet is available, or the application's RX buffer is full, the packet is dropped.
+	\item \textbf{Transmitter}: Blocks getting a packet from the TX queue. If the packet fails to send, it is retried a number of times before it is dropped.
+\end{itemize}
+
+\section{Blocking Behaviour}
+As mentioned above, the receiver and sender threads use the blocking/non-blocking calls to the free packet descriptor and bounded buffer to ensure the specified blocking behaviour.
+
+\subsection{Shortage of PacketDescriptors and Burst of Incoming Data Packets}
+A free packet descriptor is allocated from the free packet descriptor store right after it is initialised, before it is handed back to the test harness. This is then provided to the receiver thread, to ensure that there always is a packet descriptor available for registering with the network device, even if all others have been allocated by applications. One spare packet descriptor is always kept - if no new one can be allocated after receiving, the packet is dropped and the packet descriptor re-used for the next packet.
+
+\section{Special Features}
+Packets are retried after a short delay, for a number of times as set in MAX\_RETRIES. This is not quite random exponential back-off. The delay increases linearly after every failed attempt.
+
+
+\end{document}
