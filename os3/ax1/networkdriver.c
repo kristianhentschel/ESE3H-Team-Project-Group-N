@@ -10,11 +10,13 @@
  */
 
 #include "BoundedBuffer.h"
-#include <string.h>
 #include "freepacketdescriptorstore__full.h"
 #include "packetdescriptorcreator.h"
 #include "networkdriver.h"
 #include "diagnostics.h"
+
+#include <string.h>
+#include <unistd.h>
 #include <assert.h>
 #include <pthread.h>
 
@@ -22,6 +24,7 @@
 #define RX_BUF_SIZE 1
 #define TX_BUF_SIZE 10
 #define MAX_RETRIES 2
+#define RETRIES_DELAY 51200 /* 51.2 ms, based on wikipedia article http://en.wikipedia.org/wiki/Exponential_backoff */
 
 /* =====================================
  * DATA TYPES & STATIC METHOD SIGNATURES 
@@ -33,22 +36,20 @@ void *thread_packet_receiver(void *arg);
 /* thread to take packets from the transmit queue and send them to the network device */
 void *thread_packet_transmitter(void *arg);
 
-/* Receive and Transmit Buffers */
+/* Use provided bounded buffer for receive and rransmit Buffers */
 typedef BoundedBuffer RXBuffer;
 typedef BoundedBuffer TXBuffer;
-
 
 /* ================
  * GLOBAL VARIABLES
  */
-
 static FreePacketDescriptorStore FPDS;
 static TXBuffer TX;
 static RXBuffer RX[APP_COUNT];
 static NetworkDevice ND;
+
 /* ======================
  * METHOD IMPLEMENTATIONS
-		pthread_cond_signal(&RX.available);
  */
 
 void init_network_driver(NetworkDevice               nd, 
@@ -91,6 +92,7 @@ void init_network_driver(NetworkDevice               nd,
 }
 
 
+/* Receiver thread worker method - must block on network device only */
 void *thread_packet_receiver(void *arg) {
 	PID pid;
 	PacketDescriptor pd, bufpd;
@@ -100,15 +102,16 @@ void *thread_packet_receiver(void *arg) {
 	bufpd = (PacketDescriptor) arg;
 
 	while(1) {
-		/* use the previously acquired buffer */
+		/* use the previously acquired packet descriptor */
 		init_packet_descriptor(&bufpd);
 		register_receiving_packetdescriptor(ND, &bufpd);
 		
-		/* blocks until packet received from network. */
+		/* block until packet received from network. */
 		DIAGNOSTICS("Receive: Waiting for network packet.\n");
 		await_incoming_packet(ND);
 	
-		/* copy the packet into a new packet descriptor taken from the free packet descriptor store */
+		/* attempt to get a descriptor for the next incoming packet. If none is available,
+		 * drop this packet and re-use the descriptor. */
 		pd = bufpd;
 		if (nonblocking_get_pd(FPDS, &bufpd)) {
 			DIAGNOSTICS("Receive: Dropped packet as Free PD Store was empty.\n");
@@ -125,13 +128,14 @@ void *thread_packet_receiver(void *arg) {
 		}
 	}
 
+	/* never reached */
 	return NULL;
 }
 
 /*
  * Thread loops forever, reading a packet from the transmit queue and sending it to the device.
- * A number of retries are attempted immediately if a packet fails to send.
- * TODO should have a delay/random exponential back-off in there?
+ * A number of retries are attempted after a short delay if a packet fails to send.
+ * The delay increases linearly (constant time multiplied by number of failures).
  */
 void *thread_packet_transmitter(void *arg) {
 	PacketDescriptor pd;
@@ -147,18 +151,22 @@ void *thread_packet_transmitter(void *arg) {
 			tx_status = send_packet(ND, pd);
 			retries--;
 			
-			DIAGNOSTICS("Transmit: Attempted to send. tx_status: %d, retries: %d\n", tx_status, retries);
+			DIAGNOSTICS("Transmit: Attempted to send. tx_status: %d, retries left: %d\n", tx_status, retries);
 			if (tx_status == 1) {
+				/* transmitted successfully, don't do any more retries */
 				break;
 			}
 			
 			if (retries == 0) {
 				DIAGNOSTICS("Transmit: Packet dropped after retries exceeded.\n");
+			} else {
+				usleep( (MAX_RETRIES - retries) * RETRIES_DELAY );
 			}
 		}
 		
 	}
 
+	/* never reached */
 	return NULL;
 }
 
@@ -174,12 +182,12 @@ int nonblocking_send_packet(PacketDescriptor pd) {
 
 void blocking_get_packet(PacketDescriptor *pd, PID pid) {
 	DIAGNOSTICS("Get: Blocking\n");
-	assert(pid <= APP_COUNT);
+	assert(pid <= APP_COUNT && pid >= 0);
 	*pd = blockingReadBB(RX[pid]);
 }
 
 int nonblocking_get_packet(PacketDescriptor *pd, PID pid) {
 	DIAGNOSTICS("Get: Non-Blocking\n");
-	assert(pid <= APP_COUNT);
+	assert(pid <= APP_COUNT && pid >= 0);
 	return nonblockingReadBB(RX[pid], pd);
 }
