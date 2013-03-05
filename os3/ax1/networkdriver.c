@@ -1,3 +1,14 @@
+/*
+ * Author: Kristian Hentschel
+ * Matric: 1003734h
+ * Date: 2013-03-05
+ * OS3 Assessed exercise 3
+ *
+ * This file is my own work as defined in the ethics agreement I have signed.
+ *
+ * The FreePacketDescriptorStore and BoundedBuffer implementations have been linked from the provided object files. Those are not my own work.
+ */
+
 #include "BoundedBuffer.h"
 #include <string.h>
 #include "freepacketdescriptorstore__full.h"
@@ -34,7 +45,7 @@ typedef BoundedBuffer TXBuffer;
 static FreePacketDescriptorStore FPDS;
 static TXBuffer TX;
 static RXBuffer RX[APP_COUNT];
-
+static NetworkDevice ND;
 /* ======================
  * METHOD IMPLEMENTATIONS
 		pthread_cond_signal(&RX.available);
@@ -46,6 +57,8 @@ void init_network_driver(NetworkDevice               nd,
                          FreePacketDescriptorStore * fpds_ptr) {
 	int i;
 	pthread_t worker_rx, worker_tx;
+	PacketDescriptor extrapd;
+	ND = nd;
 
 	/*
 	 * Initialise all receive and transmit buffers
@@ -66,34 +79,34 @@ void init_network_driver(NetworkDevice               nd,
 	FPDS = create_fpds();
 	create_free_packet_descriptors(FPDS, mem_start, mem_length);
 	*fpds_ptr = FPDS;
+
+	/*
+	 * take a packet from the store before application threads get a chance to do so.
+	 */
+	blocking_get_pd(FPDS, &extrapd);
+
 	/* initialise threads (receiver and transmitter) */
-	pthread_create(&worker_rx, NULL, thread_packet_receiver, (void *) nd);
-	pthread_create(&worker_tx, NULL, thread_packet_transmitter, (void *) nd);
+	pthread_create(&worker_rx, NULL, thread_packet_receiver, (void *) extrapd);
+	pthread_create(&worker_tx, NULL, thread_packet_transmitter, NULL); 
 }
 
 
 void *thread_packet_receiver(void *arg) {
 	PID pid;
 	PacketDescriptor pd, bufpd;
-	NetworkDevice nd;
 
-	/* TODO this might block (deadlock?) if applications have acquired all the free packet descriptors from the store
-	 * before this gets scheduled. Only really deadlocks if network device doesn't serve send requests before reads.
-	 * might solve this by setting one aside and handing it to this thread before returning the fpds_ptr in init().
-	 * */
-	DIAGNOSTICS("Receive: Initialised thread, waiting to get buffer packet descriptor.\n");
-	blocking_get_pd(FPDS, &bufpd);
-
-	nd = (NetworkDevice) arg;
+	DIAGNOSTICS("Receive: Initialised thread.\n");
+	
+	bufpd = (PacketDescriptor) arg;
 
 	while(1) {
 		/* use the previously acquired buffer */
 		init_packet_descriptor(&bufpd);
-		register_receiving_packetdescriptor(nd, &bufpd);
+		register_receiving_packetdescriptor(ND, &bufpd);
 		
 		/* blocks until packet received from network. */
 		DIAGNOSTICS("Receive: Waiting for network packet.\n");
-		await_incoming_packet(nd);
+		await_incoming_packet(ND);
 	
 		/* copy the packet into a new packet descriptor taken from the free packet descriptor store */
 		pd = bufpd;
@@ -110,27 +123,28 @@ void *thread_packet_receiver(void *arg) {
 		} else {
 			DIAGNOSTICS("Receive: Got packet and successfully stored it in RX buffer for PID %d.\n", pid);
 		}
-
 	}
 
 	return NULL;
 }
 
-
+/*
+ * Thread loops forever, reading a packet from the transmit queue and sending it to the device.
+ * A number of retries are attempted immediately if a packet fails to send.
+ * TODO should have a delay/random exponential back-off in there?
+ */
 void *thread_packet_transmitter(void *arg) {
 	PacketDescriptor pd;
 	int tx_status = 0;
 	int retries = 0;
-	NetworkDevice nd;
-
-	nd = (NetworkDevice) arg;
-
+	
 	DIAGNOSTICS("Transmit: Thread initialised.\n");
+
 	while (1) {
 		pd = blockingReadBB(TX);
 		retries = MAX_RETRIES;
 		while (retries > 0) {
-			tx_status = send_packet(nd, pd);
+			tx_status = send_packet(ND, pd);
 			retries--;
 			
 			DIAGNOSTICS("Transmit: Attempted to send. tx_status: %d, retries: %d\n", tx_status, retries);
