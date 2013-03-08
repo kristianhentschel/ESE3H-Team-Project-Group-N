@@ -44,7 +44,7 @@ int main(void) {
 	}
 
 	printf("good-bye");
-	zb_transport_destroy();	
+	zb_transport_stop();	
 	return;
 }
 	
