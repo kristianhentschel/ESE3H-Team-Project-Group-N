@@ -9,10 +9,6 @@
  *
  */
 
-#define OP_PING 0x00
-#define OP_PONG 0x01
-#define OP_MEASURE_REQUEST 0x10
-#define OP_MEASURE_RESPONSE 0x11
 /* in the real implementation, this will be updated through DMA by the ADC peripheral continously. */
 static unsigned int DMA_ADC_VALUE;
 

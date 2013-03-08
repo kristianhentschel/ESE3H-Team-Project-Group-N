@@ -17,6 +17,10 @@
 
 #define MAX_PACKET_SIZE 72
 
+#define OP_PING 0x00
+#define OP_PONG 0x01
+#define OP_MEASURE_REQUEST 0x10
+#define OP_MEASURE_RESPONSE 0x11
 /* global variables to hold parser results */
 char	zb_word_data[MAX_PACKET_SIZE];
 int		zb_word_len;
