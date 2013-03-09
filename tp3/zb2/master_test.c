@@ -25,6 +25,7 @@ static void *thread_parse(void *);
 int main(void) {
 	char c;
 	pthread_t parser_thread;
+	char response_buffer[REQUEST_RESULT_BUFSIZE];
 
 	pthread_create(&parser_thread, NULL, thread_parse, NULL);
 
@@ -36,16 +37,16 @@ int main(void) {
 		}
 		switch (c) {
 			case 'm':
-				REQUEST_measure(NULL);
+				REQUEST_measure(response_buffer);
 				break;
 			case 'c':
-				REQUEST_calibrate(NULL);
+				REQUEST_calibrate(response_buffer);
 				break;
 			case 'd':
-				REQUEST_data(NULL);
+				REQUEST_data(response_buffer);
 				break;
 			case 'p':
-				REQUEST_ping(NULL);
+				REQUEST_ping(response_buffer);
 				break;
 			default:
 				printf("unknown command %c\n", c);
