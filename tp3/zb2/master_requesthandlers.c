@@ -30,7 +30,7 @@ static enum comms_state state;
 
 int busy() {
 	/* TODO implement time-out. */
-	return (state == STATE_IDLE);
+	return !(state == STATE_IDLE);
 }
 
 void sensors_init() {

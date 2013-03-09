@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdio.h>
+#include <pthread.h>
 #include "zb_transport.h"
 #include "zb_packets.h"
 #include "master_requesthandlers.h"
@@ -17,39 +18,47 @@
  */
 
 
+static void *thread_parse(void *);
+
 /* for testing only. will be replaced by webserver implementation. */
 int main(void) {
 	char c;
+	pthread_t parser_thread;
+
+	pthread_create(&parser_thread, NULL, thread_parse, NULL);
 
 	zb_transport_init();
 	
-	c = 0;
-	while (c != 'q') {
+	while ((c = getchar()) != 'q') {
+		if (!isalpha(c)) {
+			continue;
+		}
 		switch (c) {
 			case 'm':
-				REQUEST_measure(stdout);
+				REQUEST_measure(NULL);
 				break;
 			case 'c':
-				REQUEST_calibrate(stdout);
+				REQUEST_calibrate(NULL);
 				break;
 			case 'd':
-				REQUEST_data(stdout);
+				REQUEST_data(NULL);
 				break;
 			case 'p':
-				REQUEST_ping(stdout);
+				REQUEST_ping(NULL);
 				break;
 			default:
 				printf("unknown command %c\n", c);
 		}
 	}
 
-	printf("good-bye");
 	zb_transport_stop();	
-	return;
+	
+	printf("good-bye\n");
+	return 0;
 }
 	
 /* this could/should be a separate thread. */
-void parse(void *arg) {
+static void *thread_parse(void *arg) {
 	char c;
 
 	while(1){
@@ -73,5 +82,7 @@ void parse(void *arg) {
 			default:
 				break;
 		}
-	}	
+	}
+
+	return NULL;
 }
