@@ -29,8 +29,8 @@ enum comms_state {STATE_IDLE, STATE_PENDING_MEASURE, STATE_PENDING_CALIBRATE};
 static enum comms_state state;
 
 int busy() {
-	/* TODO implement time-out. */
-	return !(state == STATE_IDLE);
+	/* TODO implement time-out and state thingy for testing, allowing all comms all the time. */
+	return 0;
 }
 
 void sensors_init() {
@@ -62,6 +62,7 @@ void REQUEST_measure(char *buf) {
 	} else {
 		DIAGNOSTICS("MEASURE:  request not honoured as the system is currently busy.\n");
 	}
+	buf[0] = '\0';
 }
 
 void REQUEST_calibrate(char *buf) {
@@ -72,6 +73,7 @@ void REQUEST_calibrate(char *buf) {
 	} else {
 		DIAGNOSTICS("CALIBRATE: request not honoured as the system is currently busy.\n");
 	}
+	buf[0] = '\0';
 }
 
 void REQUEST_ping(char *buf) {
@@ -82,6 +84,7 @@ void REQUEST_ping(char *buf) {
 	} else {
 		DIAGNOSTICS("PING request not honoured as the system is currently busy.\n");
 	}
+	buf[0] = '\0';
 }
 
 void REQUEST_data(char *buf) {
@@ -92,10 +95,46 @@ void REQUEST_data(char *buf) {
 		pthread_mutex_lock(&sensor_results[i].lock);
 		DIAGNOSTICS("DATA: Sensor %d: Raw %d, Offset %d, Corrected %d. Last read at %d\n",
 				i,
-				sensor_results[i].data,
-				sensor_configs[i].offset,
-				sensor_results[i].data - sensor_configs[i].offset,
-				sensor_results[i].time);
+				(int) sensor_results[i].data,
+				(int) sensor_configs[i].offset,
+				(int) (sensor_results[i].data + sensor_configs[i].offset),
+				(int) sensor_results[i].time);
 		pthread_mutex_unlock(&sensor_results[i].lock);
+	}
+
+	buf[0] = '\0';
+}
+
+
+
+void HANDLE_packet_received() {
+	int d;
+	switch (zb_packet_op) {
+		case OP_PING:
+			DIAGNOSTICS("Responding to PING request from %d.\n", zb_packet_from);
+			zb_send_packet(OP_PONG, NULL, 0);
+			break;
+		case OP_PONG:
+			DIAGNOSTICS("Received PONG from %d.\n", zb_packet_from);
+			break;
+		case OP_MEASURE_REQUEST:
+			DIAGNOSTICS("Received measure request. Ignoring on master unit.\n");
+			break;
+		case OP_MEASURE_RESPONSE:
+			DIAGNOSTICS("Received measure response from %d. Updating sensor result.\n", zb_packet_from);
+			if (zb_packet_from > SENSOR_COUNT) {
+				DIAGNOSTICS("response from unknown sensor. ignoring.\n");
+				break;
+			}
+
+			d = zb_packet_from;
+
+			pthread_mutex_lock(&sensor_results[d].lock);
+			sensor_results[d].data = zb_packet_data[0]; /* TODO parse as hex string */
+			sensor_results[d].time = time(NULL);
+			pthread_mutex_unlock(&sensor_results[d].lock);
+			break;
+		default:
+			DIAGNOSTICS("Received packet with unsupported OP-code. ignoring.\n");
 	}
 }

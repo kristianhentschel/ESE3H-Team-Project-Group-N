@@ -1,6 +1,6 @@
 #include "zb_packets.h"
 #include "zb_transport.h"
-
+#include "diagnostics.h"
 #include <string.h>
 #include <ctype.h>
 #include <stdio.h>
@@ -33,7 +33,7 @@ void zb_enter_command_mode() {
 	zb_guard_delay();
 	zb_send("+++", 3);
 	zb_guard_delay();
-	printf("entered command mode\n");
+	DIAGNOSTICS("entered command mode\n");
 }
 
 /*
@@ -63,7 +63,7 @@ void zb_send_command_with_argument(char cmd[2], char *data, unsigned char len) {
 	zb_send(buf, n);
 	
 	buf[n] = '\0';
-	printf("sent command %s\n", buf);
+	DIAGNOSTICS("sent command %s\n", buf);
 }
 
 /*
@@ -94,7 +94,10 @@ void zb_send_packet(char op, char *data, char len) {
 	chk = zb_checksum(buf, n);
 	buf[n++] = chk;
 	buf[n++] = '\n';
+
 	zb_send(buf, n);
+
+	DIAGNOSTICS("sent packet of %d bytes.\n", n);
 }
 
 /*
@@ -127,7 +130,7 @@ enum zb_parse_state {LEX_WAITING, LEX_IN_WORD, LEX_PACKET_OP, LEX_PACKET_FROM, L
 enum zb_parse_response zb_parse(char c) {
 	static unsigned char checksum;
 	static unsigned char packet_data_count;
-	static enum zb_parse_state state;
+	static enum zb_parse_state state = LEX_WAITING;
 
 	/* see the start of a packet - discard everything else.
 	 * the delimeter character is illegal in data except in a checksum.
@@ -175,7 +178,11 @@ enum zb_parse_response zb_parse(char c) {
 		case LEX_PACKET_LENGTH:
 			zb_packet_len = c;
 			checksum += c;
-			state = LEX_PACKET_DATA;
+			if (zb_packet_len == 0) {
+				state = LEX_PACKET_CHECKSUM;
+			} else {
+				state = LEX_PACKET_DATA;
+			}
 			break;
 		case LEX_PACKET_DATA:
 			zb_packet_data[packet_data_count++] = c;
@@ -188,7 +195,7 @@ enum zb_parse_response zb_parse(char c) {
 			break;
 		case LEX_PACKET_CHECKSUM:
 			state = LEX_WAITING;
-			printf("Sum character from packet: %0x, actual sum of received bytes: %0x\n", c, 0xff-checksum);
+			DIAGNOSTICS("Sum character from packet: %0x, actual sum of received bytes: %0x\n", c, 0xff-checksum);
 			if (0xFF - checksum == c) {
 				return ZB_VALID_PACKET;
 			} else {

@@ -29,5 +29,6 @@ void REQUEST_calibrate(char *buf);
 void REQUEST_data(char *buf);
 void REQUEST_ping(char *buf);
 
+void HANDLE_packet_received();
 #endif /*__MASTER_REQUESTHANDLERS_H__*/
 

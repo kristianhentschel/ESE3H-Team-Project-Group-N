@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <ctype.h>
 #include "zb_transport.h"
 #include "zb_packets.h"
 #include "master_requesthandlers.h"
@@ -30,7 +31,7 @@ int main(void) {
 	zb_transport_init();
 	
 	while ((c = getchar()) != 'q') {
-		if (!isalpha(c)) {
+		if (!isalpha((int) c)) {
 			continue;
 		}
 		switch (c) {
@@ -75,6 +76,7 @@ static void *thread_parse(void *arg) {
 				break;
 			case ZB_VALID_PACKET:
 				printf("\n(valid packet of %d characters with op code %x from device %x: '%s')\n", zb_packet_len, zb_packet_op, zb_packet_from, strndup(zb_packet_data, zb_packet_len));
+				HANDLE_packet_received();
 				break;
 			case ZB_INVALID_PACKET:
 				printf("\n(invalid packet)\n");
@@ -83,6 +85,5 @@ static void *thread_parse(void *arg) {
 				break;
 		}
 	}
-
 	return NULL;
 }
