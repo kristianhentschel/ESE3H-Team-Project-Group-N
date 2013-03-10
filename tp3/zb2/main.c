@@ -12,13 +12,14 @@ __IO uint16_t ADCConvertedValue = 0;
 static void ADC_Config(void);
 static void USART_Config(void);
 static void respond();
+static char hexToChar(char h);
 
 int main(void)
 {
 	unsigned char c;
 	
 	/* set up ADC3 */
-	ADC3_CH12_DMA_Config();
+	ADC_Config();
 
 	/* Start ADC3 Software Conversion */ 
 	ADC_SoftwareStartConv(ADC3);
@@ -59,10 +60,10 @@ static void respond() {
 			break;
 		case OP_MEASURE_REQUEST:
 			val = ADCConvertedValue;
-			buf[0] = hexToChar(val & 0x0f);
-			buf[1] = hexToChar(val >> 4  & 0x0f);
-			buf[2] = hexToChar(val >> 8  & 0x0f);
-			buf[3] = hexToChar(val >> 12 & 0x0f);
+			buf[3] = hexToChar(val & 0x0f);
+			buf[2] = hexToChar(val >> 4  & 0x0f);
+			buf[1] = hexToChar(val >> 8  & 0x0f);
+			buf[0] = hexToChar(val >> 12 & 0x0f);
 			zb_send_packet(OP_MEASURE_RESPONSE, buf, 4);
 			break;
 		default:
@@ -72,7 +73,7 @@ static void respond() {
 
 
 /**
-  * @brief  ADC3 channel12 with DMA configuration
+  * @brief  ADC3 channel1 with DMA configuration
   * @param  None
   * @retval None
   *
@@ -92,7 +93,7 @@ void ADC_Config(void)
   /* DMA2 Stream0 channel0 configuration **************************************/
   DMA_InitStructure.DMA_Channel = DMA_Channel_2;
   DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)ADC3_DR_ADDRESS;
-  DMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t)&ADC3ConvertedValue;
+  DMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t)&ADCConvertedValue;
   DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralToMemory;
   DMA_InitStructure.DMA_BufferSize = 1;
   DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
@@ -108,11 +109,11 @@ void ADC_Config(void)
   DMA_Init(DMA2_Stream0, &DMA_InitStructure);
   DMA_Cmd(DMA2_Stream0, ENABLE);
 
-  /* Configure ADC3 Channel12 pin as analog input ******************************/
+  /* Configure ADC3 Channel1 pin as analog input ******************************/
   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL ;
-  GPIO_Init(GPIOC, &GPIO_InitStructure);
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
 
   /* ADC Common Init **********************************************************/
   ADC_CommonInitStructure.ADC_Mode = ADC_Mode_Independent;
@@ -130,8 +131,8 @@ void ADC_Config(void)
   ADC_InitStructure.ADC_NbrOfConversion = 1;
   ADC_Init(ADC3, &ADC_InitStructure);
 
-  /* ADC3 regular channel12 configuration *************************************/
-  ADC_RegularChannelConfig(ADC3, ADC_Channel_12, 1, ADC_SampleTime_3Cycles);
+  /* ADC3 regular channel1 configuration *************************************/
+  ADC_RegularChannelConfig(ADC3, ADC_Channel_1, 1, ADC_SampleTime_3Cycles);
 
  /* Enable DMA request after last transfer (Single-ADC mode) */
   ADC_DMARequestAfterLastTransferCmd(ADC3, ENABLE);
@@ -141,4 +142,13 @@ void ADC_Config(void)
 
   /* Enable ADC3 */
   ADC_Cmd(ADC3, ENABLE);
+}
+
+static char hexToChar(char h) {
+	static const chars[17] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
+	if(h >= 0 && h <= 15) {
+		return chars[h];
+	} else {
+		return 'X';
+	}
 }
