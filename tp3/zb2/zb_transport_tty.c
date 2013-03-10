@@ -4,7 +4,7 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <stdio.h>
-
+#include "diagnostics.h"
 #define RX_BUFFER_SIZE 256
 #define SERIAL_DEVICE "/dev/ttyAMA0"
 #define SERIAL_BAUD_RATE 9600
@@ -110,6 +110,8 @@ char zb_getc() {
 	RX_buffer.count--;
 	RX_buffer.first = (RX_buffer.first + 1) % RX_BUFFER_SIZE;
 	
+	DIAGNOSTICS("getc: got %02x, %d in RX buffer\n", c, RX_buffer.count);
+
 	pthread_cond_signal(&RX_buffer.nonfull);
 	pthread_mutex_unlock(&RX_buffer.lock);
 
@@ -133,11 +135,13 @@ static void *serial_monitor(void *arg) {
 			pthread_cond_wait(&RX_buffer.nonfull, &RX_buffer.lock);
 		}
 		
+		RX_buffer.elements[RX_buffer.last] = c;
 		RX_buffer.last = (RX_buffer.last + 1) % RX_BUFFER_SIZE;
 		
-		RX_buffer.elements[RX_buffer.last] = c;
 		RX_buffer.count++;
 		
+		DIAGNOSTICS("read: got %02x, %d in RX buffer now.\n", c, RX_buffer.count);	
+
 		pthread_cond_signal(&RX_buffer.nonempty);
 		pthread_mutex_unlock(&RX_buffer.lock);
 	}
