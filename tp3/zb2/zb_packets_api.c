@@ -221,6 +221,7 @@ enum zb_parse_response zb_parse(unsigned char c) {
 		frame_length = 0;
 		frame_bytes_seen = 0;
 		frame_address_bytes_seen = 0;
+		packet_data_count = 0;
 
 		zb_packet_op = 0;
 		zb_packet_from = 0;
@@ -304,6 +305,7 @@ enum zb_parse_response zb_parse(unsigned char c) {
 		case LEX_PACKET_DATA:
 			frame_bytes_seen++;
 			zb_packet_data[packet_data_count++] = c;
+			zb_packet_len++;
 			checksum += c;
 			if (frame_bytes_seen == frame_length) {
 				DIAGNOSTICS("\ngot all data bytes (%d), as well as all frame bytes (%d). wait for checksum.\n", packet_data_count, frame_bytes_seen);
