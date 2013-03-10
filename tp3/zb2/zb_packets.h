@@ -47,7 +47,7 @@ void zb_send_command_with_argument(char cmd[2], char *data, unsigned char len);
 void zb_send_command(char cmd[2]);
 
 /* packetizes the data and sends it using the linked transport implementation. */
-void zb_send_packet(char type, char *data, char len);
+void zb_send_packet(char type, unsigned char *data, unsigned char len);
 
 /* parses the response, should be called in order on every character received.
  *

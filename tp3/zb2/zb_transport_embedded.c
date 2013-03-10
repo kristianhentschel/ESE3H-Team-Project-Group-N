@@ -32,7 +32,7 @@ static char q_take(Queue q);
 struct queue RX;
 
 /* synchronously sends a single character, by busy-waiting until send buffer is empty. */
-static void zb_putc(char c) {
+static void zb_putc(unsigned char c) {
 	while (!(USART3->SR & USART_FLAG_TXE))
 		;
 	USART_SendData(USART3, c);
@@ -43,7 +43,6 @@ void zb_transport_init() {
 	GPIO_InitTypeDef	GPIO_InitStructure;
 	USART_InitTypeDef	USART_InitStructure;
 	NVIC_InitTypeDef	NVIC_InitStructure;
-
 	/* init data structures */
 	RX.head = 0;
 	RX.tail = 0;
@@ -102,7 +101,7 @@ void zb_transport_stop() {
 }
 
 /* blocking write, sending character by character */
-void zb_send(char *buf, unsigned char len) {
+void zb_send(unsigned char *buf, unsigned char len) {
 	int i;
 	for (i = 0; i < len; i++) {
 		zb_putc(buf[i]);

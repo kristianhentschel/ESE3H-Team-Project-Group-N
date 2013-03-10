@@ -5,12 +5,19 @@
 #include <ctype.h>
 #include <stdio.h>
 
+#define PACKET_DELIMETER 0x7E
+
 /* TODO define this somewhere more sensible, maybe in its own header file or compile-time definition on cmd line for make? */
 #ifndef DEVICE_ID
 #define DEVICE_ID 0x02
 #endif
 
-#define PACKET_DELIMETER 0x7E
+
+#define ZB_API_TRANSMITREQUEST 0x10
+
+/* TODO this defines where all packets from this module go and should be an api method, not a #define. */
+#define DEST_BROADCAST
+
 /*
  * zb_packets.h
  *
@@ -30,9 +37,9 @@ char	zb_packet_op;
 char	zb_packet_from;
 char	zb_packet_len;
 
-/* utility fucntion to calculate checksum */
-static char zb_checksum(char *buf, unsigned char len);
-static void zb_send_frame(char *buf, unsigned char len);
+/* private utility functions */
+static unsigned char zb_checksum(unsigned char *buf, unsigned char len);
+static void zb_send_frame(unsigned char *buf, unsigned char len);
 
 /*
  * Command mode is not required with API firmware, so this does nothing.
@@ -49,7 +56,7 @@ void zb_enter_command_mode() {
  * This implements the AT Request API Frame.
  */
 void zb_send_command_with_argument(char cmd[2], char *data, unsigned char len) {
-	char buf[MAX_PACKET_SIZE];
+	unsigned char buf[MAX_PACKET_SIZE];
 	unsigned char n, i;
 
 	n = 0;
@@ -84,13 +91,43 @@ void zb_send_command(char cmd[2]) {
  * assembles a full packet with sender address, length, checksum
  *
  * This implements the RF Transmission Request API Frame.
+ *
+ * broadcast or unicast needs to be defined - this is a hack and the packets API should be updated with
+ * zb_send_packet_broadcast(op, data, len) and zb_send_packet_unicast(address, op, data, len). (TODO)
  */
-void zb_send_packet(char op, char *data, char len) {
-	char buf[MAX_PACKET_SIZE];
-	unsigned char n, i, chk;
-
+void zb_send_packet(char op, unsigned char *data, unsigned char len) {
+	unsigned char buf[MAX_PACKET_SIZE];
+	unsigned char n, i;
+	
 	n = 0;
-	buf[n++] = PACKET_DELIMETER;
+	buf[n++] = ZB_API_TRANSMITREQUEST;
+
+	/* frame id. 0 = no ack sent. */
+	buf[n++] = 0x00;
+
+	/* 64 bit destination address. for coord and broadcast, first 6 bytes are 0. */
+	for (i = 0; i < 6; i++) {
+		buf[n++] = 0x00;
+	}
+
+#ifdef DEST_BROADCAST
+	buf[n++] = 0xff;
+	buf[n++] = 0xff;
+
+	/* 16 bit broadcast network address */
+	buf[n++] = 0xff;
+	buf[n++] = 0xfe; /* not a typo - see spec! */
+#else
+	buf[n++] = 0x00;
+	buf[n++] = 0x00;
+
+	/* 16 bit coordinator network address */
+	buf[n++] = 0x00;
+	buf[n++] = 0x00;
+#endif
+
+
+	/* payload in old format */
 	buf[n++] = op;
 	buf[n++] = DEVICE_ID;
 	buf[n++] = len;
@@ -99,10 +136,6 @@ void zb_send_packet(char op, char *data, char len) {
 		buf[n] = data[i];
 		n++;
 	}
-	
-	chk = zb_checksum(buf, n);
-	buf[n++] = chk;
-	buf[n++] = '\n';
 
 	zb_send_frame(buf, n);
 
@@ -110,8 +143,8 @@ void zb_send_packet(char op, char *data, char len) {
 }
 
 /* packages the api-specific structure part in a serial frame with a checksum */
-void zb_send_frame(char *buf, unsigned char len){
-	char frame[MAX_PACKET_SIZE];
+void zb_send_frame(unsigned char *buf, unsigned char len){
+	unsigned char frame[MAX_PACKET_SIZE];
 	unsigned char n, i;
 
 	n = 0;
@@ -131,15 +164,13 @@ void zb_send_frame(char *buf, unsigned char len){
 }
 
 /*
- * checksum: sum of all bytes except checksum and initial delimeter.
- * keeping only lower 8 bits, subtract from 0xFF.
+ * checksum: sum of all bytes, keeping only lower 8 bits, subtract from 0xFF.
  */
-char zb_checksum(char *buf, unsigned char len) {
+static unsigned char zb_checksum(unsigned char *buf, unsigned char len) {
 	unsigned char i, result;
 
 	result = 0;
-	/* start counting at one to skip packet delimeter byte. */
-	for (i = 1; i < len; i++) {
+	for (i = 0; i < len; i++) {
 		result += buf[i];
 	}
 

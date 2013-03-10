@@ -20,7 +20,7 @@ void zb_transport_init();
 void zb_transport_stop();
 
 /* sends a complete data packet over the serial line */
-void zb_send(char *buf, unsigned char len);
+void zb_send(unsigned char *buf, unsigned char len);
 
 /* blocks until a character is available in the serial buffer */
 char zb_getc();

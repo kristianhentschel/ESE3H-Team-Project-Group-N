@@ -89,7 +89,7 @@ void zb_transport_stop() {
 	close(serial_fd);
 }
 
-void zb_send(char *buf, unsigned char len) {
+void zb_send(unsigned char *buf, unsigned char len) {
 	write(serial_fd, buf, len);
 	fsync(serial_fd);
 }
