@@ -4,6 +4,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #define PACKET_DELIMETER 0x7E
 
@@ -200,13 +201,14 @@ enum zb_parse_response zb_parse(unsigned char c) {
 	static enum zb_parse_state state = LEX_WAITING;
 	/* see the start of a packet - discard everything else.
 	 * the delimeter character is illegal in data except in a checksum.
+	 * TODO it is legal in checksum and addresses and length. need to use escape mode!
 	 */
-
 	if (state != LEX_PACKET_CHECKSUM && c == PACKET_DELIMETER) {
 		state = LEX_FRAME_LENGTH_MSB;
 		checksum = 0;
 		frame_length = 0;
 		frame_bytes_seen = 0;
+		frame_address_bytes_seen = 0;
 
 		zb_packet_op = 0;
 		zb_packet_from = 0;
@@ -223,13 +225,16 @@ enum zb_parse_response zb_parse(unsigned char c) {
 			state = LEX_FRAME_LENGTH_LSB;
 			break;
 		case LEX_FRAME_LENGTH_LSB:
-			frame_length &= (c & 0x00ff);
+			frame_length |= (c & 0x00ff);
 			state = LEX_API_ID;
 			frame_bytes_seen = 0;
+			DIAGNOSTICS("\nexpecting (%x) %d bytes for this frame.\n", c, frame_length);
 			break;
 		case LEX_API_ID:
+			checksum += c;
 			frame_bytes_seen++;
 			if (c == ZB_API_RECEIVEPACKET) {
+				DIAGNOSTICS("\nit's a receive packet frame.\n");
 				state = LEX_FRAME_ADDR64;
 			} else {
 				/* ignore this packet */
@@ -239,9 +244,11 @@ enum zb_parse_response zb_parse(unsigned char c) {
 			}
 			break;
 		case LEX_FRAME_ADDR64:
+			checksum += c;
 			frame_bytes_seen++;
 			frame_address_bytes_seen++;
 			if (frame_address_bytes_seen == 8) {
+				DIAGNOSTICS("\ngot 8 bytes of device address, have %d bytes total now.\n", frame_bytes_seen);
 				state = LEX_FRAME_NETWORK_MSB;
 			} else {
 				state = LEX_FRAME_ADDR64;
@@ -249,16 +256,19 @@ enum zb_parse_response zb_parse(unsigned char c) {
 			break;
 		case LEX_FRAME_NETWORK_MSB:
 			/* ignoring */
+			checksum += c;
 			frame_bytes_seen++;
 			state = LEX_FRAME_NETWORK_LSB;
 			break;
 		case LEX_FRAME_NETWORK_LSB:
 			/* ignoring */
+			checksum += c;
 			frame_bytes_seen++;
 			state = LEX_FRAME_OPTIONS;
 			break;
 		case LEX_FRAME_OPTIONS:
 			/* ignoring */
+			checksum += c;
 			frame_bytes_seen++;
 			state = LEX_PACKET_OP;
 			break;
@@ -266,19 +276,25 @@ enum zb_parse_response zb_parse(unsigned char c) {
 			frame_bytes_seen++;
 			zb_packet_op = c;
 			checksum += c;
+			DIAGNOSTICS("\ngot op code %x, %d total bytes now.\n", c, frame_bytes_seen);
 			state = LEX_PACKET_FROM;
 			break;
 		case LEX_PACKET_FROM:
 			frame_bytes_seen++;
 			zb_packet_from = c;
 			checksum += c;
-			state = LEX_PACKET_DATA;
+			if (frame_bytes_seen == frame_length) {
+				state = LEX_PACKET_CHECKSUM;
+			} else {
+				state = LEX_PACKET_DATA;
+			}
 			break;
 		case LEX_PACKET_DATA:
 			frame_bytes_seen++;
 			zb_packet_data[packet_data_count++] = c;
 			checksum += c;
 			if (frame_bytes_seen == frame_length) {
+				DIAGNOSTICS("\ngot all data bytes (%d), as well as all frame bytes (%d). wait for checksum.\n", packet_data_count, frame_bytes_seen);
 				state = LEX_PACKET_CHECKSUM;
 			} else {
 				state = LEX_PACKET_DATA;
