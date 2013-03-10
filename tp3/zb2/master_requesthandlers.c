@@ -6,6 +6,7 @@
 #include <time.h>
 #include <ctype.h>
 
+#define TIMEOUT 4
 /* this implementation of the REQUEST functions is not thread-safe. only one thread should be calling them. */
 
 /* private types */
@@ -30,15 +31,17 @@ enum comms_state {STATE_IDLE, STATE_PENDING_MEASURE, STATE_PENDING_CALIBRATE};
 
 /* private variables */
 static enum comms_state state;
-
+time_t last_response_time = 0;
 /* static methods */
 static unsigned int hexToInt(char *buf, unsigned char len);
-
 
 static int busy() {
 	/* TODO implement time-out and state thingy.
 	 * For testing, allowing all comms all the time. */
-	return 0;
+	if (time(NULL) - last_response_time > TIMEOUT) {
+		state = STATE_IDLE;
+	}
+	return state == STATE_IDLE;
 }
 
 void sensors_init() {
@@ -73,9 +76,18 @@ void REQUEST_measure(char *buf) {
 	buf[0] = '\0';
 }
 
+/*
+ * calibration requested by user. gets raw data from sensors, and sets this value as the zero point for that sensor.
+ * system will wait for all sensors to successfully return data before allowing new measurements.
+ */
 void REQUEST_calibrate(char *buf) {
+	int i;
+
 	if (!busy()) {
 		DIAGNOSTICS("CALIBRATE: sending broadcast message to get raw measurements\n");
+		for (i = 1; i < SENSOR_COUNT; i++) {
+			sensor_configs[i].calibrated = 0;
+		}
 		state = STATE_PENDING_CALIBRATE;
 		zb_send_packet(OP_MEASURE_REQUEST, NULL, 0);
 	} else {
@@ -116,7 +128,8 @@ void REQUEST_data(char *buf) {
 
 
 void HANDLE_packet_received() {
-	int d;
+	int d, i;
+	last_response_time = time(NULL);
 	switch (zb_packet_op) {
 		case OP_PING:
 			DIAGNOSTICS("Received PING request from %d.\n", zb_packet_from);
@@ -143,6 +156,15 @@ void HANDLE_packet_received() {
 
 			if (state == STATE_PENDING_CALIBRATE) {
 				sensor_configs[d].offset = sensor_results[d].data;
+				sensor_configs[d].calibrated = 1;
+
+				state = STATE_IDLE;
+
+				for (i = 1; i < SENSOR_COUNT; i++) {
+					if (sensor_configs[i].calibrated == 0) {
+						state = STATE_PENDING_CALIBRATE;
+					}
+				}
 			}
 
 			pthread_mutex_unlock(&sensor_results[d].lock);
