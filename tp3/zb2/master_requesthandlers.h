@@ -21,7 +21,7 @@
  * that must be of this size or bigger. */
 #define REQUEST_RESULT_BUFSIZE 4096
 
-#define SENSOR_COUNT 1
+#define SENSOR_COUNT 5
 typedef unsigned long sensor_data_t;
 
 void REQUEST_measure(char *buf);

@@ -4,8 +4,11 @@
 #include "diagnostics.h"
 #include <pthread.h>
 #include <time.h>
+#include <ctype.h>
 
 /* this implementation of the REQUEST functions is not thread-safe. only one thread should be calling them. */
+
+/* private types */
 struct sensor_result {
 	int device_id;
 	sensor_data_t data;
@@ -25,11 +28,16 @@ static struct sensor_result sensor_results[SENSOR_COUNT];
 
 enum comms_state {STATE_IDLE, STATE_PENDING_MEASURE, STATE_PENDING_CALIBRATE};
 
-
+/* private variables */
 static enum comms_state state;
 
-int busy() {
-	/* TODO implement time-out and state thingy for testing, allowing all comms all the time. */
+/* static methods */
+static unsigned int hexToInt(char *buf, unsigned char len);
+
+
+static int busy() {
+	/* TODO implement time-out and state thingy.
+	 * For testing, allowing all comms all the time. */
 	return 0;
 }
 
@@ -111,7 +119,7 @@ void HANDLE_packet_received() {
 	int d;
 	switch (zb_packet_op) {
 		case OP_PING:
-			DIAGNOSTICS("Responding to PING request from %d.\n", zb_packet_from);
+			DIAGNOSTICS("Received PING request from %d.\n", zb_packet_from);
 			zb_send_packet(OP_PONG, NULL, 0);
 			break;
 		case OP_PONG:
@@ -122,7 +130,7 @@ void HANDLE_packet_received() {
 			break;
 		case OP_MEASURE_RESPONSE:
 			DIAGNOSTICS("Received measure response from %d. Updating sensor result.\n", zb_packet_from);
-			if (zb_packet_from > SENSOR_COUNT) {
+			if (zb_packet_from >= SENSOR_COUNT || zb_packet_from == 0) {
 				DIAGNOSTICS("response from unknown sensor. ignoring.\n");
 				break;
 			}
@@ -130,11 +138,32 @@ void HANDLE_packet_received() {
 			d = zb_packet_from;
 
 			pthread_mutex_lock(&sensor_results[d].lock);
-			sensor_results[d].data = zb_packet_data[0]; /* TODO parse as hex string */
-			sensor_results[d].time = time(NULL);
+			sensor_results[d].data = hexToInt(zb_packet_data, zb_packet_len);
+			sensor_results[d].time = time(NULL); /* TODO gettimeofday for more resolution? */
 			pthread_mutex_unlock(&sensor_results[d].lock);
 			break;
 		default:
 			DIAGNOSTICS("Received packet with unsupported OP-code. ignoring.\n");
 	}
+}
+
+/* convert a string of hexadecimal numbers to an integer */
+static unsigned int hexToInt(char *buf, unsigned char len) {
+	int i;
+	char c;
+	unsigned int result, v;
+
+	result = 0;
+	for (i = 0; i < len; i++) {
+		c = tolower((int) buf[i]);
+		if (c >= 'a' && c <= 'f') {
+			v = c - 'a' + 10;
+		} else if (c >= '0' && c <= '9') {
+			v = c - '0';
+		} else {
+			v = 0;
+		}
+		result = result * 16 + v;
+	}
+	return result;
 }
