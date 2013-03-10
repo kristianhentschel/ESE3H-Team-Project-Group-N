@@ -16,6 +16,8 @@ int main(void) {
 	char c;
 
 	zb_transport_init();
+	zb_set_broadcast_mode(0);
+	zb_set_device_id(1);
 
 	DMA_ADC_VALUE = 128;
 

@@ -8,16 +8,8 @@
 
 #define PACKET_DELIMETER 0x7E
 
-/* TODO define this somewhere more sensible, maybe in its own header file or compile-time definition on cmd line for make? */
-#ifndef DEVICE_ID
-#define DEVICE_ID 0x02
-#endif
-
-
 #define ZB_API_TRANSMITREQUEST 0x10
 #define ZB_API_RECEIVEPACKET 0x90
-/* TODO this defines where all packets from this module go and should be an api method, not a #define. */
-#define DEST_BROADCAST
 
 /*
  * zb_packets.h
@@ -38,9 +30,29 @@ char	zb_packet_op;
 char	zb_packet_from;
 char	zb_packet_len;
 
+/* private global variables */
+static char DEVICE_ID = 0x00;
+static char DEST_BROADCAST = 0;
 /* private utility functions */
 static unsigned char zb_checksum(unsigned char *buf, unsigned char len);
 static void zb_send_frame(unsigned char *buf, unsigned char len);
+
+
+/*
+ * device id is used inside the packet to identify individual sensors.
+ */
+void zb_set_device_id(char id) {
+	DIAGNOSTICS("now operating as DEVICE_ID %d\n", id);
+	DEVICE_ID = id;
+}
+
+/*
+ * enable or disable broadcast. send to all nodes, or only send to coordinator.
+ */
+void zb_set_broadcast_mode(char broadcast) {
+	DEST_BROADCAST = broadcast;
+}
+
 
 /*
  * Command mode is not required with API firmware, so this does nothing.
@@ -111,21 +123,21 @@ void zb_send_packet(char op, unsigned char *data, unsigned char len) {
 		buf[n++] = 0x00;
 	}
 
-#ifdef DEST_BROADCAST
-	buf[n++] = 0xff;
-	buf[n++] = 0xff;
+	if (DEST_BROADCAST) {
+		buf[n++] = 0xff;
+		buf[n++] = 0xff;
 
-	/* 16 bit broadcast network address */
-	buf[n++] = 0xff;
-	buf[n++] = 0xfe; /* not a typo - see spec! */
-#else
-	buf[n++] = 0x00;
-	buf[n++] = 0x00;
+		/* 16 bit broadcast network address */
+		buf[n++] = 0xff;
+		buf[n++] = 0xfe; /* not a typo - see spec! */
+	} else {
+		buf[n++] = 0x00;
+		buf[n++] = 0x00;
 
-	/* 16 bit coordinator network address */
-	buf[n++] = 0x00;
-	buf[n++] = 0x00;
-#endif
+		/* 16 bit coordinator network address */
+		buf[n++] = 0x00;
+		buf[n++] = 0x00;
+	}
 
 	/* broadcast hop radius (0 = max) */
 	buf[n++] = 0x00;

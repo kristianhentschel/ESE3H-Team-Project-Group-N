@@ -26,6 +26,9 @@ int main(void)
 
 	/* Setup UART */
 	zb_transport_init();
+
+	zb_set_broadcast_mode(0);
+	zb_set_device_id(2);
 	
 	while (1)
 	{

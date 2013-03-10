@@ -39,6 +39,9 @@ enum zb_parse_response {
 	ZB_INVALID_PACKET
 };
 
+void zb_set_broadcast_mode(char broadcast);
+void zb_set_deviceid(char id);
+
 /* enters command mode. It is the user's responsibility to exit from this by letting the timeout expire or sending an ATCN command. */
 void zb_enter_command_mode();
 

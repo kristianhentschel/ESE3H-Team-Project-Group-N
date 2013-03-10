@@ -1,3 +1,5 @@
+#define DEVICE_ID 0
+
 #include <string.h>
 #include <stdio.h>
 #include <pthread.h>
@@ -5,6 +7,7 @@
 #include "zb_transport.h"
 #include "zb_packets.h"
 #include "master_requesthandlers.h"
+
 
 /*
  * master_test.c
@@ -30,6 +33,8 @@ int main(void) {
 	pthread_create(&parser_thread, NULL, thread_parse, NULL);
 
 	zb_transport_init();
+	zb_set_broadcast_mode(1);
+	zb_set_device_id(0);
 	
 	while ((c = getchar()) != 'q') {
 		if (!isalpha((int) c)) {
