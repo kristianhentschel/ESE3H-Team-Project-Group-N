@@ -16,7 +16,7 @@ static void respond();
 
 int main(void)
 {
-	char c;
+	unsigned char c;
 	
 	/* set up ADC3 */
 	ADC3_CH12_DMA_Config();
