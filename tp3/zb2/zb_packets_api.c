@@ -14,7 +14,7 @@
 
 
 #define ZB_API_TRANSMITREQUEST 0x10
-
+#define ZB_API_RECEIVEPACKET 0x90
 /* TODO this defines where all packets from this module go and should be an api method, not a #define. */
 #define DEST_BROADCAST
 
@@ -126,11 +126,15 @@ void zb_send_packet(char op, unsigned char *data, unsigned char len) {
 	buf[n++] = 0x00;
 #endif
 
+	/* broadcast hop radius (0 = max) */
+	buf[n++] = 0x00;
 
-	/* payload in old format */
+	/* options (0x01 = disable ack, 0x02 = disable network address discovery */
+	buf[n++] = 0x00;
+
+	/* RF data: payload (op, from, data) */
 	buf[n++] = op;
 	buf[n++] = DEVICE_ID;
-	buf[n++] = len;
 	
 	for (i = 0; i < len; i++) {
 		buf[n] = data[i];
@@ -138,8 +142,6 @@ void zb_send_packet(char op, unsigned char *data, unsigned char len) {
 	}
 
 	zb_send_frame(buf, n);
-
-	DIAGNOSTICS("sent packet of %d bytes.\n", n);
 }
 
 /* packages the api-specific structure part in a serial frame with a checksum */
@@ -186,22 +188,26 @@ static unsigned char zb_checksum(unsigned char *buf, unsigned char len) {
  *
  * store results in global variables defined in header file.
  */
-enum zb_parse_state {LEX_WAITING, LEX_IN_WORD, LEX_PACKET_OP, LEX_PACKET_FROM, LEX_PACKET_LENGTH, LEX_PACKET_DATA, LEX_PACKET_CHECKSUM};
+enum zb_parse_state {LEX_WAITING, LEX_IN_WORD,
+	LEX_FRAME_LENGTH_MSB, LEX_FRAME_LENGTH_LSB, LEX_API_ID, LEX_FRAME_ADDR64, LEX_FRAME_NETWORK_MSB, LEX_FRAME_NETWORK_LSB, LEX_FRAME_OPTIONS, 
+	LEX_PACKET_OP, LEX_PACKET_FROM, LEX_PACKET_LENGTH, LEX_PACKET_DATA, LEX_PACKET_CHECKSUM};
 
-enum zb_parse_response zb_parse(char c) {
-	static unsigned char checksum;
-	static unsigned char packet_data_count;
+enum zb_parse_response zb_parse(unsigned char c) {
+	static unsigned char checksum, packet_data_count;
+	static uint16_t			frame_length;
+	static uint16_t			frame_bytes_seen;
+	static uint16_t			frame_address_bytes_seen;
 	static enum zb_parse_state state = LEX_WAITING;
-
 	/* see the start of a packet - discard everything else.
 	 * the delimeter character is illegal in data except in a checksum.
 	 */
 
 	if (state != LEX_PACKET_CHECKSUM && c == PACKET_DELIMETER) {
-		state = LEX_PACKET_OP;
+		state = LEX_FRAME_LENGTH_MSB;
 		checksum = 0;
-		packet_data_count = 0;
-		
+		frame_length = 0;
+		frame_bytes_seen = 0;
+
 		zb_packet_op = 0;
 		zb_packet_from = 0;
 		zb_packet_len = 0;
@@ -211,44 +217,68 @@ enum zb_parse_response zb_parse(char c) {
 
 	switch (state) {
 		case LEX_WAITING:
-			if (isalnum((int) c)) {
-				zb_word_data[0] = c;
-				zb_word_len = 1;
-				state = LEX_IN_WORD;
+			break;
+		case LEX_FRAME_LENGTH_MSB:
+			frame_length = (c << 8) & 0xff00;
+			state = LEX_FRAME_LENGTH_LSB;
+			break;
+		case LEX_FRAME_LENGTH_LSB:
+			frame_length &= (c & 0x00ff);
+			state = LEX_API_ID;
+			frame_bytes_seen = 0;
+			break;
+		case LEX_API_ID:
+			frame_bytes_seen++;
+			if (c == ZB_API_RECEIVEPACKET) {
+				state = LEX_FRAME_ADDR64;
+			} else {
+				/* ignore this packet */
+				state = LEX_WAITING;
+				DIAGNOSTICS("Parse: seen packet with unhandled api id %x, ignoring.\n", c);
+				return ZB_INVALID_PACKET;
 			}
 			break;
-		case LEX_IN_WORD:
-			if (isalnum((int) c)) {
-				zb_word_data[zb_word_len++] = c;
-				state = LEX_IN_WORD;
+		case LEX_FRAME_ADDR64:
+			frame_bytes_seen++;
+			frame_address_bytes_seen++;
+			if (frame_address_bytes_seen == 8) {
+				state = LEX_FRAME_NETWORK_MSB;
 			} else {
-				state = LEX_WAITING;
-				return ZB_PLAIN_WORD;
+				state = LEX_FRAME_ADDR64;
 			}
+			break;
+		case LEX_FRAME_NETWORK_MSB:
+			/* ignoring */
+			frame_bytes_seen++;
+			state = LEX_FRAME_NETWORK_LSB;
+			break;
+		case LEX_FRAME_NETWORK_LSB:
+			/* ignoring */
+			frame_bytes_seen++;
+			state = LEX_FRAME_OPTIONS;
+			break;
+		case LEX_FRAME_OPTIONS:
+			/* ignoring */
+			frame_bytes_seen++;
+			state = LEX_PACKET_OP;
 			break;
 		case LEX_PACKET_OP:
+			frame_bytes_seen++;
 			zb_packet_op = c;
 			checksum += c;
 			state = LEX_PACKET_FROM;
 			break;
 		case LEX_PACKET_FROM:
+			frame_bytes_seen++;
 			zb_packet_from = c;
 			checksum += c;
-			state = LEX_PACKET_LENGTH;
-			break;
-		case LEX_PACKET_LENGTH:
-			zb_packet_len = c;
-			checksum += c;
-			if (zb_packet_len == 0) {
-				state = LEX_PACKET_CHECKSUM;
-			} else {
-				state = LEX_PACKET_DATA;
-			}
+			state = LEX_PACKET_DATA;
 			break;
 		case LEX_PACKET_DATA:
+			frame_bytes_seen++;
 			zb_packet_data[packet_data_count++] = c;
 			checksum += c;
-			if (packet_data_count == zb_packet_len) {
+			if (frame_bytes_seen == frame_length) {
 				state = LEX_PACKET_CHECKSUM;
 			} else {
 				state = LEX_PACKET_DATA;

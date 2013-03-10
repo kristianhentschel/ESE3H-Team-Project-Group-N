@@ -58,6 +58,6 @@ void zb_send_packet(char type, unsigned char *data, unsigned char len);
  *  - ZB_VALID_PACKET - A complete valid packet, matching the checksum and length fields, has been received.
  *  	Result will be valid in zb_packet_data, zb_packet_from, and zb_packet_len.
  */
-enum zb_parse_response zb_parse(char c);
+enum zb_parse_response zb_parse(unsigned char c);
 
 #endif /* __ZB_PACKETS_H__ */
