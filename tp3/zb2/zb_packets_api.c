@@ -69,28 +69,8 @@ void zb_enter_command_mode() {
  * This implements the AT Request API Frame.
  */
 void zb_send_command_with_argument(char cmd[2], char *data, unsigned char len) {
-	unsigned char buf[MAX_PACKET_SIZE];
-	unsigned char n, i;
-
-	n = 0;
-	buf[n++] = 'A'; 
-	buf[n++] = 'T';
-	buf[n++] = cmd[0];
-	buf[n++] = cmd[1];
-
-	if (data != NULL) {
-		buf[n++] = ' ';
-		for (i = 0; i < len; i++) {
-			buf[n++] = data[i]; 
-		}
-	}
-
-	buf[n++] = '\r';
-	buf[n++] = '\n';
-	zb_send(buf, n);
-	
-	buf[n] = '\0';
-	DIAGNOSTICS("sent command %s\n", buf);
+	/* TODO not implemented yet. */
+	DIAGNOSTICS("AT Commands not implemented yet.\n");
 }
 
 /*
@@ -193,8 +173,6 @@ static unsigned char zb_checksum(unsigned char *buf, unsigned char len) {
 }
 
 /*
- * TODO: It's complicated.
- *
  * for return values see header file comment.
  *
  * keep a lot of state in static variables local to this function.
@@ -241,18 +219,18 @@ enum zb_parse_response zb_parse(unsigned char c) {
 			frame_length |= (c & 0x00ff);
 			state = LEX_API_ID;
 			frame_bytes_seen = 0;
-			DIAGNOSTICS("\nexpecting (%x) %d bytes for this frame.\n", c, frame_length);
+			/* DIAGNOSTICS("\nexpecting (%x) %d bytes for this frame.\n", c, frame_length); */
 			break;
 		case LEX_API_ID:
 			checksum += c;
 			frame_bytes_seen++;
 			if (c == ZB_API_RECEIVEPACKET) {
-				DIAGNOSTICS("\nit's a receive packet frame.\n");
+				/* DIAGNOSTICS("\nit's a receive packet frame.\n"); */
 				state = LEX_FRAME_ADDR64;
 			} else {
 				/* ignore this packet */
 				state = LEX_WAITING;
-				DIAGNOSTICS("Parse: seen packet with unhandled api id %x, ignoring.\n", c);
+				/* DIAGNOSTICS("Parse: seen packet with unhandled api id %x, ignoring.\n", c); */
 				return ZB_INVALID_PACKET;
 			}
 			break;
@@ -261,7 +239,7 @@ enum zb_parse_response zb_parse(unsigned char c) {
 			frame_bytes_seen++;
 			frame_address_bytes_seen++;
 			if (frame_address_bytes_seen == 8) {
-				DIAGNOSTICS("\ngot 8 bytes of device address, have %d bytes total now.\n", frame_bytes_seen);
+				/* DIAGNOSTICS("\ngot 8 bytes of device address, have %d bytes total now.\n", frame_bytes_seen); */
 				state = LEX_FRAME_NETWORK_MSB;
 			} else {
 				state = LEX_FRAME_ADDR64;
@@ -289,7 +267,7 @@ enum zb_parse_response zb_parse(unsigned char c) {
 			frame_bytes_seen++;
 			zb_packet_op = c;
 			checksum += c;
-			DIAGNOSTICS("\ngot op code %x, %d total bytes now.\n", c, frame_bytes_seen);
+			/* DIAGNOSTICS("\ngot op code %x, %d total bytes now.\n", c, frame_bytes_seen); */
 			state = LEX_PACKET_FROM;
 			break;
 		case LEX_PACKET_FROM:
@@ -308,7 +286,7 @@ enum zb_parse_response zb_parse(unsigned char c) {
 			zb_packet_len++;
 			checksum += c;
 			if (frame_bytes_seen == frame_length) {
-				DIAGNOSTICS("\ngot all data bytes (%d), as well as all frame bytes (%d). wait for checksum.\n", packet_data_count, frame_bytes_seen);
+				/* DIAGNOSTICS("\ngot all data bytes (%d), as well as all frame bytes (%d). wait for checksum.\n", packet_data_count, frame_bytes_seen); */
 				state = LEX_PACKET_CHECKSUM;
 			} else {
 				state = LEX_PACKET_DATA;
@@ -316,7 +294,7 @@ enum zb_parse_response zb_parse(unsigned char c) {
 			break;
 		case LEX_PACKET_CHECKSUM:
 			state = LEX_WAITING;
-			DIAGNOSTICS("Sum character from packet: %0x, actual sum of received bytes: %0x\n", c, 0xff-checksum);
+			/* DIAGNOSTICS("Sum character from packet: %0x, actual sum of received bytes: %0x\n", c, 0xff-checksum); */
 			if (0xFF - checksum == c) {
 				return ZB_VALID_PACKET;
 			} else {

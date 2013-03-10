@@ -41,7 +41,7 @@ static int busy() {
 	if (time(NULL) - last_response_time > TIMEOUT) {
 		state = STATE_IDLE;
 	}
-	return state == STATE_IDLE;
+	return state != STATE_IDLE;
 }
 
 void sensors_init() {
