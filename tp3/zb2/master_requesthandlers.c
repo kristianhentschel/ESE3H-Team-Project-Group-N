@@ -105,7 +105,7 @@ void REQUEST_data(char *buf) {
 				i,
 				(int) sensor_results[i].data,
 				(int) sensor_configs[i].offset,
-				(int) (sensor_results[i].data + sensor_configs[i].offset),
+				(int) (sensor_results[i].data - sensor_configs[i].offset),
 				(int) sensor_results[i].time);
 		pthread_mutex_unlock(&sensor_results[i].lock);
 	}
@@ -140,6 +140,11 @@ void HANDLE_packet_received() {
 			pthread_mutex_lock(&sensor_results[d].lock);
 			sensor_results[d].data = hexToInt(zb_packet_data, zb_packet_len);
 			sensor_results[d].time = time(NULL); /* TODO gettimeofday for more resolution? */
+
+			if (state == STATE_PENDING_CALIBRATE) {
+				sensor_configs[d].offset = sensor_results[d].data;
+			}
+
 			pthread_mutex_unlock(&sensor_results[d].lock);
 			break;
 		default:
