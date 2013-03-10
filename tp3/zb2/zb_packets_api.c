@@ -5,7 +5,7 @@
 #include <ctype.h>
 #include <stdio.h>
 
-/* TODO define this somewhere more sensible, maybe in its own header file? */
+/* TODO define this somewhere more sensible, maybe in its own header file or compile-time definition on cmd line for make? */
 #ifndef DEVICE_ID
 #define DEVICE_ID 0x02
 #endif
@@ -17,8 +17,7 @@
  * Author: Kristian Hentschel
  * Team Project 3. University of Glasgow. 2013
  *
- * Implementation of a simple packetization layer.
- *
+ * Implementation of a subset of the ZigBEE2 API packet protocol.
  */
 
 /* global variables as declared in .h file */
@@ -33,24 +32,21 @@ char	zb_packet_len;
 
 /* utility fucntion to calculate checksum */
 static char zb_checksum(char *buf, unsigned char len);
+static void zb_send_frame(char *buf, unsigned char len);
 
 /*
- * send command mode sequence within guard times of 1 second silence.
- *
- * after this, the word OK should be received and the device will accept AT commands.
- * Must exit command mode by sending ATCN command.
+ * Command mode is not required with API firmware, so this does nothing.
  */
 void zb_enter_command_mode() {
-	zb_guard_delay();
-	zb_send("+++", 3);
-	zb_guard_delay();
-	DIAGNOSTICS("entered command mode\n");
+	/* this space intentionally left empty */
+	return;
 }
 
 /*
- * sends data verbatim for use with AT commands:
- * "AT" cmd data "\r\n"
+ * Sends a request for an AT style command.
  * data can be NULL, in that case a command without parameter (read or action) is sent.
+ *
+ * This implements the AT Request API Frame.
  */
 void zb_send_command_with_argument(char cmd[2], char *data, unsigned char len) {
 	char buf[MAX_PACKET_SIZE];
@@ -86,6 +82,8 @@ void zb_send_command(char cmd[2]) {
 
 /*
  * assembles a full packet with sender address, length, checksum
+ *
+ * This implements the RF Transmission Request API Frame.
  */
 void zb_send_packet(char op, char *data, char len) {
 	char buf[MAX_PACKET_SIZE];
@@ -106,9 +104,30 @@ void zb_send_packet(char op, char *data, char len) {
 	buf[n++] = chk;
 	buf[n++] = '\n';
 
-	zb_send(buf, n);
+	zb_send_frame(buf, n);
 
 	DIAGNOSTICS("sent packet of %d bytes.\n", n);
+}
+
+/* packages the api-specific structure part in a serial frame with a checksum */
+void zb_send_frame(char *buf, unsigned char len){
+	char frame[MAX_PACKET_SIZE];
+	unsigned char n, i;
+
+	n = 0;
+	frame[n++] = PACKET_DELIMETER;
+	frame[n++] = 0x00;
+	frame[n++] = len;
+
+	for (i = 0; i < len; i++) {
+		frame[n++] = buf[i];
+	}
+
+	frame[n++] = zb_checksum(buf, len);
+	frame[n++] = '\0';
+	
+	DIAGNOSTICS("Packaged %d bytes in a frame of %d bytes and sent it to the transport layer.\n", len, n);
+	zb_send(frame, n);
 }
 
 /*
