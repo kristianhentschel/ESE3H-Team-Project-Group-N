@@ -110,7 +110,7 @@ char zb_getc() {
 	RX_buffer.count--;
 	RX_buffer.first = (RX_buffer.first + 1) % RX_BUFFER_SIZE;
 	
-	DIAGNOSTICS("getc: got %02x, %d in RX buffer\n", c, RX_buffer.count);
+	/* DIAGNOSTICS("getc: got %02x, %d in RX buffer\n", c, RX_buffer.count); */
 
 	pthread_cond_signal(&RX_buffer.nonfull);
 	pthread_mutex_unlock(&RX_buffer.lock);
@@ -140,7 +140,7 @@ static void *serial_monitor(void *arg) {
 		
 		RX_buffer.count++;
 		
-		DIAGNOSTICS("read: got %02x, %d in RX buffer now.\n", c, RX_buffer.count);	
+		/* DIAGNOSTICS("read: got %02x, %d in RX buffer now.\n", c, RX_buffer.count); */
 
 		pthread_cond_signal(&RX_buffer.nonempty);
 		pthread_mutex_unlock(&RX_buffer.lock);
