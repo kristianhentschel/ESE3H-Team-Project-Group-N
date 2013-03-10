@@ -22,13 +22,13 @@
 #define OP_MEASURE_REQUEST 0x10
 #define OP_MEASURE_RESPONSE 0x20
 /* global variables to hold parser results */
-char	zb_word_data[MAX_PACKET_SIZE];
-int		zb_word_len;
+extern char zb_word_data[MAX_PACKET_SIZE];
+extern int zb_word_len;
 
-char	zb_packet_data[MAX_PACKET_SIZE];
-char	zb_packet_op;
-char	zb_packet_from;
-char	zb_packet_len;
+extern char zb_packet_data[MAX_PACKET_SIZE];
+extern char zb_packet_op;
+extern char zb_packet_from;
+extern char zb_packet_len;
 
 /* return type of parser function */
 enum zb_parse_response {

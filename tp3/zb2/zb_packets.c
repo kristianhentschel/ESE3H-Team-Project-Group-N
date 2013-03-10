@@ -7,7 +7,7 @@
 
 /* TODO define this somewhere more sensible, maybe in its own header file? */
 #ifndef DEVICE_ID
-#define DEVICE_ID 0x01
+#define DEVICE_ID 0x02
 #endif
 
 #define PACKET_DELIMETER 0x7E
@@ -21,6 +21,17 @@
  *
  */
 
+/* global variables as declared in .h file */
+
+char	zb_word_data[MAX_PACKET_SIZE];
+int		zb_word_len;
+
+char	zb_packet_data[MAX_PACKET_SIZE];
+char	zb_packet_op;
+char	zb_packet_from;
+char	zb_packet_len;
+
+/* utility fucntion to calculate checksum */
 static char zb_checksum(char *buf, unsigned char len);
 
 /*
