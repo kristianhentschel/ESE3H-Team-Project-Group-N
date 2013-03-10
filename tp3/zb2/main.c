@@ -7,10 +7,9 @@
  * to the debugger watch window
  * (taken from (c) STMicro example file) */
 #define ADC3_DR_ADDRESS     ((uint32_t)0x4001224C)
-__IO uint16_t ADC3ConvertedValue = 0;
-__IO uint32_t ADC3ConvertedVoltage = 0;
+__IO uint16_t ADCConvertedValue = 0;
 
-static void ADC3_CH12_DMA_Config(void);
+static void ADC_Config(void);
 static void USART_Config(void);
 static void respond();
 
@@ -51,12 +50,20 @@ int main(void)
 
 
 static void respond() {
+	unsigned char buf[4];
+	uint16_t val;
+
 	switch (zb_packet_op) {
 		case OP_PING:
 			zb_send_packet(OP_PONG, NULL, 0);
 			break;
 		case OP_MEASURE_REQUEST:
-			zb_send_packet(OP_MEASURE_RESPONSE, "42", 2);
+			val = ADCConvertedValue;
+			buf[0] = hexToChar(val & 0x0f);
+			buf[1] = hexToChar(val >> 4  & 0x0f);
+			buf[2] = hexToChar(val >> 8  & 0x0f);
+			buf[3] = hexToChar(val >> 12 & 0x0f);
+			zb_send_packet(OP_MEASURE_RESPONSE, buf, 4);
 			break;
 		default:
 			break;
@@ -71,7 +78,7 @@ static void respond() {
   *
   * taken from (c) STMicroelectronics example file.
   */
-void ADC3_CH12_DMA_Config(void)
+void ADC_Config(void)
 {
   ADC_InitTypeDef       ADC_InitStructure;
   ADC_CommonInitTypeDef ADC_CommonInitStructure;
@@ -79,11 +86,11 @@ void ADC3_CH12_DMA_Config(void)
   GPIO_InitTypeDef      GPIO_InitStructure;
 
   /* Enable ADC3, DMA2 and GPIO clocks ****************************************/
-  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2 | RCC_AHB1Periph_GPIOC, ENABLE);
+  RCC_AHB1PeriphClockCmd(RCC_AHB1Periph_DMA2 | RCC_AHB1Periph_GPIOA, ENABLE);
   RCC_APB2PeriphClockCmd(RCC_APB2Periph_ADC3, ENABLE);
 
   /* DMA2 Stream0 channel0 configuration **************************************/
-  DMA_InitStructure.DMA_Channel = DMA_Channel_2;  
+  DMA_InitStructure.DMA_Channel = DMA_Channel_2;
   DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)ADC3_DR_ADDRESS;
   DMA_InitStructure.DMA_Memory0BaseAddr = (uint32_t)&ADC3ConvertedValue;
   DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralToMemory;
@@ -102,7 +109,7 @@ void ADC3_CH12_DMA_Config(void)
   DMA_Cmd(DMA2_Stream0, ENABLE);
 
   /* Configure ADC3 Channel12 pin as analog input ******************************/
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_1;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AN;
   GPIO_InitStructure.GPIO_PuPd = GPIO_PuPd_NOPULL ;
   GPIO_Init(GPIOC, &GPIO_InitStructure);
