@@ -1,0 +1,4 @@
+This document is the final submission for Team Project 3, as part of the Electronic and Software Engineering degree program at the University of Glasgow. The project takes a specification from a client and involves the design and creation of wireless weighing system (WWS~\label{WWS}) for UGRacing's car.
+
+The WWS~\ref{WWS} takes the form of a simple wireless network, comprising of a number of sensors and a master unit. The master unit will act as an access point allowing any number of handheld units, whether tablets or smartphones, to view the data from each 'Scale Unit'.
+
