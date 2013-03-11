@@ -70,10 +70,11 @@ void REQUEST_measure(char *buf) {
 		DIAGNOSTICS("MEASURE: sending broadcast message to get measurements\n");
 		state = STATE_PENDING_MEASURE;
 		zb_send_packet(OP_MEASURE_REQUEST, NULL, 0);
+		sprintf(buf, "200 OK Measurement requested.\n");
 	} else {
 		DIAGNOSTICS("MEASURE:  request not honoured as the system is currently busy.\n");
+		sprintf(buf, "300 BUSY Measurement not requested as previous requests are still pending.\n");
 	}
-	buf[0] = '\0';
 }
 
 /*
@@ -90,10 +91,11 @@ void REQUEST_calibrate(char *buf) {
 		}
 		state = STATE_PENDING_CALIBRATE;
 		zb_send_packet(OP_MEASURE_REQUEST, NULL, 0);
+		sprintf(buf, "200 OK Calibration requested.\n");
 	} else {
 		DIAGNOSTICS("CALIBRATE: request not honoured as the system is currently busy.\n");
+		sprintf(buf, "300 BUSY Calibration not requested as previous requests are still pending.\n");
 	}
-	buf[0] = '\0';
 }
 
 void REQUEST_ping(char *buf) {
@@ -101,8 +103,10 @@ void REQUEST_ping(char *buf) {
 		DIAGNOSTICS("PING sent.\n");
 		state = STATE_PENDING_CALIBRATE;
 		zb_send_packet(OP_PING, NULL, 0);
+		sprintf(buf, "200 OK Ping request sent.\n");
 	} else {
 		DIAGNOSTICS("PING request not honoured as the system is currently busy.\n");
+		sprintf(buf, "300 BUSY ping: previous requests still pending.\n");
 	}
 	buf[0] = '\0';
 }
@@ -121,8 +125,7 @@ void REQUEST_data(char *buf) {
 				(int) sensor_results[i].time);
 		pthread_mutex_unlock(&sensor_results[i].lock);
 	}
-
-	buf[0] = '\0';
+	sprintf(buf, "sensor data for sensor 2: %d, last read at %d\n", sensor_results[2].data, sensor_results[2].time);
 }
 
 
