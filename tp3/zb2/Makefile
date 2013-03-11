@@ -15,4 +15,4 @@ master_webserver: webserver/server-singlethreaded.o webserver/linkedstringbuffer
 
 
 clean:
-	rm -f *.o master_test scale_test master_webserver
+	rm -f *.o webserver/*.o master_test scale_test master_webserver
