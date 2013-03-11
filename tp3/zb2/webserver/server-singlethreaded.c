@@ -1,6 +1,24 @@
-#include "networking.h"
+/* zigbee includes */
+#include "../zb_packets.h"
+#include "../zb_transport.h"
+#include "../diagnostics.h"
+#include "../master_requesthandlers.h"
+
+/* api paths */
+#define PATH_API_BASE		"api/"
+#define PATH_MEASURE 		"api/measure/"
+#define PATH_CALIBRATE		"api/calibrate/"
+#define PATH_DATA			"api/data/"
+#define PATH_PING			"api/ping/"
+
+/* webserver includes */
 #include "linkedstringbuffer.h"
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -9,8 +27,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <signal.h>
-
+#include <pthread.h>
 
 #define SERVER_PORT 8080
 #define SERVER_BACKLOG 16
@@ -19,17 +36,28 @@
 void handle_connection(int fd);
 void handle_request(int fd, char *request);
 
+/* zigbee serial parser and responder */
+static void *thread_zb_listen(void *arg);
+
 enum http_mime { MIME_TEXT_PLAIN, MIME_TEXT_HTML, MIME_IMAGE_JPEG, MIME_IMAGE_GIF, MIME_IMAGE_PNG, MIME_APPLICATION_OCTET_STREAM};
 enum http_status {HTTP_OK = 200, HTTP_NOT_FOUND = 404, HTTP_BAD_REQUEST = 400, HTTP_INTERNAL_SERVER_ERROR = 500};
 
 void errlog(char *msg) {
-	fprintf(stderr, "%s\n", msg);
+	fprintf(stderr, "WEBSERVER: %s\n", msg);
 }
 
 int main(void) {
 	int 				sockfd, connfd;
 	struct sockaddr_in	addr, cliaddr;
 	socklen_t			cliaddrlen = sizeof(cliaddr);
+	pthread_t			zbthread;
+
+	//set up zigbee specific stuff
+	zb_transport_init();
+	zb_set_broadcast_mode(1);
+	zb_set_device_id(0);
+
+	pthread_create(&zbthread, NULL, thread_zb_listen, NULL);
 
 	//allocate a socket
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -67,6 +95,7 @@ int main(void) {
 		}
 	}
 	close(sockfd);
+	zb_transport_stop();
 	return 0;
 }
 
@@ -256,14 +285,16 @@ void respond_file(int fd, char *path) {
 void handle_request(int fd, char *request) {
 	char *response, *status_str;
 	char path[1024]; 
+	char response_buf[REQUEST_RESULT_BUFSIZE];
 	long content_length = 0;
 	enum http_status status = HTTP_OK;
 	enum http_mime mime = MIME_TEXT_HTML;
+	int is_api_request = 0;
 
 	fprintf(stderr, "parsing request:\n%s\n", request);
 
 	/* parse request data */
-
+	response = "";
 	if( sscanf(request, "GET /%1023s HTTP/1.1", path) != 1 ) {
 		/* we only support GET, so might as well hard code it... */
 		status = HTTP_BAD_REQUEST;
@@ -276,6 +307,25 @@ void handle_request(int fd, char *request) {
 		/* path definitely outside document root. */
 		errlog("invalid path, cannot start with . or /");
 		status = HTTP_BAD_REQUEST;
+	} else if (strncmp(path, PATH_API_BASE, strlen(PATH_API_BASE)) == 0) {
+		mime = MIME_TEXT_PLAIN;
+		status = HTTP_OK;
+		if (strcmp(path, PATH_MEASURE)) {
+			REQUEST_measure(response);
+		} else if (strcmp(path, PATH_CALIBRATE)) {
+			REQUEST_measure(response);
+		} else if (strcmp(path, PATH_DATA)) {
+			REQUEST_measure(response);
+		} else if (strcmp(path, PATH_PING)) {
+			REQUEST_measure(response);
+		} else {
+			status = HTTP_NOT_FOUND;
+		}
+
+		if (status == HTTP_OK) {
+			is_api_request = 1;
+			response = strdup(response_buf);
+		}
 	} else if ((content_length = file_size(path)) < 0) {
 		/* file not found or un-stat-able */
 		errlog("file not found");
@@ -287,7 +337,6 @@ void handle_request(int fd, char *request) {
 	}
 
 	/* handle http status codes */
-	response = "";
 	status_str = "";
 	switch(status) {
 		case HTTP_OK:
@@ -314,11 +363,36 @@ void handle_request(int fd, char *request) {
 
 	http_headers(fd, status, status_str, mime, content_length);
 
-	if (status == HTTP_OK) {
+	if (status == HTTP_OK && !is_api_request) {
 		respond_file(fd, path);
 	} else {
 		respond_string(fd, response);
+		if (is_api_request) {
+			free(response);
+		}
 	}
 
 	errlog("--- request handling complete ---");
+}
+
+
+
+static void *thread_zb_listen(void *arg) {
+	char c;
+
+	while(1){
+		c = zb_getc();
+		switch (zb_parse(c)) {
+			case ZB_VALID_PACKET:
+				printf("\n(valid packet of %d characters with op code %x from device %x: '%s')\n", zb_packet_len, zb_packet_op, zb_packet_from, strndup(zb_packet_data, zb_packet_len));
+				HANDLE_packet_received();
+				break;
+			case ZB_INVALID_PACKET:
+				printf("\n(invalid packet)\n");
+				break;
+			default:
+				break;
+		}
+	}
+	return NULL;
 }
