@@ -310,14 +310,14 @@ void handle_request(int fd, char *request) {
 	} else if (strncmp(path, PATH_API_BASE, strlen(PATH_API_BASE)) == 0) {
 		mime = MIME_TEXT_PLAIN;
 		status = HTTP_OK;
-		if (strcmp(path, PATH_MEASURE)) {
-			REQUEST_measure(response);
-		} else if (strcmp(path, PATH_CALIBRATE)) {
-			REQUEST_measure(response);
-		} else if (strcmp(path, PATH_DATA)) {
-			REQUEST_measure(response);
-		} else if (strcmp(path, PATH_PING)) {
-			REQUEST_measure(response);
+		if (strcmp(path, PATH_MEASURE) == 0) {
+			REQUEST_measure(response_buf);
+		} else if (strcmp(path, PATH_CALIBRATE) == 0) {
+			REQUEST_calibrate(response_buf);
+		} else if (strcmp(path, PATH_DATA) == 0) {
+			REQUEST_data(response_buf);
+		} else if (strcmp(path, PATH_PING) == 0) {
+			REQUEST_ping(response_buf);
 		} else {
 			status = HTTP_NOT_FOUND;
 		}
@@ -357,7 +357,7 @@ void handle_request(int fd, char *request) {
 			break;
 	}
 
-	if (status != HTTP_OK) {
+	if (status != HTTP_OK || (status == HTTP_OK && is_api_request)) {
 		content_length = strlen(response);
 	}
 
