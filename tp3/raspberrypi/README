@@ -1,1 +1,0 @@
-Building a python webserver on the master unit (Raspberry Pi) to serve a html/jquery GUI and provide an API to interface with the scale units via zigbee. Will contain third party libraries for gpio, the zigbee protocol and the server code as well as the client UI.
