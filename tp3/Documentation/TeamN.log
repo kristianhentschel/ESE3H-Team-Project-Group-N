@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012) (format=pdflatex 2012.9.26)  12 MAR 2013 05:39
+This is pdfTeX, Version 3.1415926-2.4-1.40.13 (TeX Live 2012) (format=pdflatex 2012.9.26)  12 MAR 2013 08:09
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -266,7 +266,7 @@ LaTeX Info: Redefining \nameref on input line 4.
 \openout3 = `TeamN.out'.
 
 
-<images/CompSci_mono.pdf, id=4, 340.27126pt x 49.18375pt>
+<images/CompSci_mono.pdf, id=80, 340.27126pt x 49.18375pt>
 File: images/CompSci_mono.pdf Graphic file (type pdf)
 
 <use images/CompSci_mono.pdf>
@@ -302,29 +302,22 @@ l.19 \tableofcontents
                       [1]
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <24.88> not available
 (Font)              Font shape `OT1/ptm/b/n' tried instead on input line 19.
-
-
-Package hyperref Warning: old toc file detected, not used; run LaTeX again.
-
+ (./TeamN.toc)
 \tf@toc=\write4
 \openout4 = `TeamN.toc'.
 
-[2
+ [2
 
 ]
 Chapter 1.
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <20.74> not available
 (Font)              Font shape `OT1/ptm/b/n' tried instead on input line 21.
-(./intro/intro.tex
+(./intro/intro.tex) (./intro/background.tex) (./intro/motivation.tex [3
 
-LaTeX Warning: Reference `WWS' on page 3 undefined on input line 3.
-
-) (./intro/background.tex) (./intro/motivation.tex) [3
-
-]
+])
 (./requirements/requirements.tex
 LaTeX Font Info:    Font shape `OT1/ptm/bx/n' in size <12> not available
-(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 1.
+(Font)              Font shape `OT1/ptm/b/n' tried instead on input line 3.
  (./requirements/gathering.tex)
 (./requirements/system.tex
 LaTeX Font Info:    Try loading font information for OMS+ptm on input line 6.
@@ -345,28 +338,18 @@ LaTeX Font Info:    Font shape `OML/ptm/m/n' in size <10.95> not available
 Chapter 2.
 (./design/overview.tex
 
-LaTeX Warning: Reference `section:NFR' on page 6 undefined on input line 1.
-
-
-LaTeX Warning: Reference `fig:Block Diagram' on page 6 undefined on input line 
-1.
+LaTeX Warning: Reference `section:non-functional' on page 6 undefined on input 
+line 1.
 
 (./design/scale.tex) (./design/central.tex) (./design/figures/block_diagram.tex
-<design/figures/block_diagram.pdf, id=51, 632.3625pt x 692.5875pt>
+<design/figures/block_diagram.pdf, id=139, 632.3625pt x 692.5875pt>
 File: design/figures/block_diagram.pdf Graphic file (type pdf)
 
 <use design/figures/block_diagram.pdf>
 Package pdftex.def Info: design/figures/block_diagram.pdf used on input line 3.
 
 (pdftex.def)             Requested size: 341.43306pt x 373.95998pt.
-))
-
-! LaTeX Error: File `design/hardware/overview.tex' not found.
-
-Type X to quit or <RETURN> to proceed,
-or enter new name. (Default extension: tex)
-
-Enter file name: 
+)) (./design/hardware/overview.tex)
 [6
 
 ] [7 <./design/figures/block_diagram.pdf>]
@@ -379,55 +362,40 @@ Chapter 4.
 
 ]
 Chapter 5.
-
-LaTeX Warning: Reference `intro' on page 10 undefined on input line 71.
-
-
-LaTeX Warning: Reference `impl' on page 10 undefined on input line 75.
-
 No file TeamN.bbl.
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 81.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 82.
 [10
 
 ]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 81.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 82.
  (./TeamN.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 81.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 81.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 82.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 82.
+Package rerunfilecheck Info: File `TeamN.out' has not changed.
+(rerunfilecheck)             Checksum: 9254C3103763931C99B1F65514818404;1098.
 
-
-Package rerunfilecheck Warning: File `TeamN.out' has changed.
-(rerunfilecheck)                Rerun to get outlines right
-(rerunfilecheck)                or use package `bookmark'.
-
-Package rerunfilecheck Info: Checksums for `TeamN.out':
-(rerunfilecheck)             Before: D41D8CD98F00B204E9800998ECF8427E;0
-(rerunfilecheck)             After:  9254C3103763931C99B1F65514818404;1098.
 
 LaTeX Warning: There were undefined references.
 
-
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
-
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 81.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 82.
  ) 
 Here is how much of TeX's memory you used:
- 5207 strings out of 493488
- 77725 string characters out of 3141326
- 157669 words of memory out of 3000000
- 8395 multiletter control sequences out of 15000+200000
+ 5234 strings out of 493488
+ 78121 string characters out of 3141326
+ 158348 words of memory out of 3000000
+ 8418 multiletter control sequences out of 15000+200000
  24361 words of font info for 48 fonts, out of 3000000 for 9000
  957 hyphenation exceptions out of 8191
- 36i,7n,28p,643b,376s stack positions out of 5000i,500n,10000p,200000b,50000s
+ 36i,7n,28p,606b,374s stack positions out of 5000i,500n,10000p,200000b,50000s
 {/usr/local/texlive/2012/texmf-dist/fonts/enc/dvips/base/8r.enc}</usr/local/t
 exlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></usr/local/te
 xlive/2012/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/local/tex
 live/2012/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/local/texlive/2012/
 texmf-dist/fonts/type1/urw/times/utmr8a.pfb>
-Output written on TeamN.pdf (12 pages, 75885 bytes).
+Output written on TeamN.pdf (12 pages, 79063 bytes).
 PDF statistics:
- 120 PDF objects out of 1000 (max. 8388607)
- 99 compressed objects within 1 object stream
+ 200 PDF objects out of 1000 (max. 8388607)
+ 178 compressed objects within 2 object streams
  39 named destinations out of 1000 (max. 500000)
- 11 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 163 words of extra memory for PDF output out of 10000 (max. 10000000)
 

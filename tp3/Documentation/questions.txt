@@ -4,3 +4,4 @@ is there a way to get rid of the pointless whitespace between chapters or is tha
 
 Is the contents meant to be red?
 
+presumably stuff like PCB images are appended on rather than popping up over the place
