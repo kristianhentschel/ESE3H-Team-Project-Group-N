@@ -1,0 +1,179 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% This is a template for constructing your project plan document, but
+% also to show the use of the l3deliverable class. Use pdflatex and
+% bibtex to process the file, creating a PDF file as output (there is
+% no need to use dvips when using pdflatex).
+%
+% Several meta data commands have been implemented to collect
+% information such as deliverable identifier, project name etc (see
+% below the \date command.
+
+\documentclass{l3deliverable}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% You can use the svn-multi package to automatically insert version
+% control information into your document (an example of how to do this
+% is shown below).  Make sure to set the 'svn:keywords' subversion
+% property to 'Id' for the source file, for example, type:
+%
+% svn propset svn:keywords 'Id' d1.tex
+%
+% in the same directory as your 'd2.tex' file. 
+%
+% The information between the two $$ will now be updated when you next
+% commit the file to your SVN repository.
+%
+% You can of course, just use this field to insert manual version
+% information, e.g. 1.2, 1.2.1 ... instead.
+
+%\usepackage{svn-multi}
+%\svnid{$Id: d1.tex 2500 2011-09-21 15:56:43Z tws $}
+%\version{SVN Revision \svnrev~ \
+%
+%Made \svnday/\svnmonth/\svnyear~ by \svnauthor}
+
+\version{0.2}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\usepackage{url}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Check these macro values for appropriateness for your own document.
+
+\title{Team Organisation}
+
+%%authors
+\author{
+  Gary Allan\\
+  Mustafa Altay\\
+  Kristian Hentschel\\
+  Joshua Marks\\
+  Kyle van der Merwe\\
+}
+
+%%release date 
+\date{26 September 2012}
+
+\deliverableID{D1}
+\project{PSD3 Group Exercise 1}
+\team{N}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\maketitle
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% Standard section for all documents
+
+\section{Introduction}
+
+\subsection{Identification}
+
+This is the team organisation document (draft, deliverable 1) of the Level 3 Professional Software Development Project of Team N.
+
+\subsection{Related Documentation}
+
+\begin{list}{}{}
+\item PSD3 Group Exercise 1, Rev 3278  \
+  
+  \url{http://fims.moodle.gla.ac.uk/file.php/128/coursework/psd3-ge-1-rev3278.pdf}
+\end{list}
+ 
+
+\subsection{Purpose and Description of Document}
+
+This document describes the organisational structure of our team, assigning basic roles to team members, defining meeting times as well as information storage and communication procedures. It shall serve as a reference throughout the project. However, it is expected that it will be updated throughout.
+
+\subsection{Document Status and Schedule}
+
+This document is a draft only and still subject to change. Further versions of it will be produced throughout the course of the project as required, based on feedback from our supervisors and experience of working in the structure defined herein.
+Particularly the role assignments are subject to change, and the decision on which version control system to use is still outstanding.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Roles}
+
+Roles have been assigned provisionally based on previous experience and interests of the team members. The role of the Chief Architect will be decided on at a later date once we have gathered some more information on the requirements and scope of the project. The Secretary, for the purpose of minuting all formal meetings, shall be assigned on a rotational basis for each individual meeting.
+
+\begin{list}{}{}
+\item Project Manager - Joshua Marks
+\item Customer Liaison - Kyle van der Merwe
+\item Librarian - Mustafa Altay
+\item Secretary - Assigned at the beginning of every meeting.
+\item Toolsmith - Kristian Hentschel
+\item Quality Assurer - Gary Allan
+\item Test Manager - Gary Allan
+\item Chief Architect - To be assigned at a later date.
+\end{list}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Authority}
+
+
+
+Our preliminary decision is to have democratic group discussions.
+
+We felt some form of rigidity to accompany this loose system was necessary. Given that we had all roles with our individual subject domains, each of us would have the final say over any decision that fell within our purview.
+The hope is that this sense of authoritative final ruling would not be necessary often, but in case of varied opinions and a large number of potentially strong views it should prevent the group from falling into mass indecision. This is obviously more of a laissez-faire approach than chief programmer(PSD3 Workshop 1); many things led us to believe this would be a better structure:
+There is no pre-existing hierarchy and limited indication of which members of the group would excel at any given task (like you may well have in a business environment). Therefore, making the group adaptable to change is paramount.
+This is especially important considering that at this point in time we do not entirely know what the project will entail, therefore strictly defined authoritative roles at this stage would be firstly a waste of time, but also potentially damaging to our need for fluidity. 
+
+%Any organisational system that can adapt well to perceived failings we felt was a good thing, therefore this system is liable to change if the group feels it is not performing as optimally as we would like (for instance that we still have indecision in the group preventing us from progressing at the rate we would like.).
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Communication}
+
+A group meeting will be held every week on Tuesday at 1pm. Meetings will have a duration of one hour unless agreed that more time is needed, in which case a new time slot will be agreed upon.
+
+If a member of Team N is unable to attend any meeting, for any reason, notice is required by 11pm on the Monday. Minutes of all meetings will be posted in the Facebook group in PDF format on the day of the meeting for all team members to view. As detailed in the next section, minutes will also be checked into our version control system.
+
+Primary methods of communication out with meetings:
+\begin{list}{}{}
+\item Private Facebook group, members are expected to check this at least daily.
+\item Email -- for all communication involving third parties, e.g. clients or supervisors. All team members should be copied into emails if practical.
+\item Phone -- all numbers are published on the facebook group
+\end{list}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Information Management}
+
+All revisions of any item relating to the project will be stored in a central version control repository. This includes all documentation, source code, diagrams, and external reference documents.
+
+As none of us have much experience with version control systems, we have temporarily set up a Github hosted git repository which we are using to produce this very document. We will decide on whether to continue using this, or switch to the SoCS provided SVN service, after the relevant PSD3 workshop and/or when we have gained more familiarity with git enabling us to make a more educated decision. It is expected that the system will not be used very much for the first few weeks which should make it feasible to switch to SVN if required at a later date.
+
+All final versions of deliverables shall additionally be stored on the SoCS file storage and backed up to a secure external location.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Organisational Risks}
+
+Since we have decided to have a very distributed view of authority (role-based), situations may arise where there is no clearly defined responsibility for tasks. This places some extra responsibility on the project manager, to assign and track tasks among team members.
+
+The threats to the groups success that arise from our particular structure, we believe to be at risk of indecision, due to the potential pit falls of loosely defined roles. This could be especially risky given that our loose authoritative structure is based on a role-defined domain of control.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\appendix
+
+\section{Glossary}
+
+SoCS -- School of Computing Science (formerly known as DCS, Department of Computing Science)
+
+% \section{Another appendix}
+
+% Any relevant associated documentation, e.g., a meeting plan.
+
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

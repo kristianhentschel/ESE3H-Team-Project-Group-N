@@ -1,0 +1,7 @@
+I assume that we are going to have a glossary where we define load cell to an adiquate level so that i can just keep referring to it assuming people know what it means without actually telling them. 
+
+is there a way to get rid of the pointless whitespace between chapters or is that the point of chapters? It just looks like funny to me because there are pages with single lines in them. Part of the problem seems to be that from the Contents page the header margins are massive compared to before and just massive in general.
+
+Is the contents meant to be red?
+
+presumably stuff like PCB images are appended on rather than popping up over the place
