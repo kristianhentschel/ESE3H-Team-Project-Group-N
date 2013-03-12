@@ -10,6 +10,8 @@
 
 #define ZB_API_TRANSMITREQUEST 0x10
 #define ZB_API_RECEIVEPACKET 0x90
+#define ZB_API_ATCOMMAND 0x08
+#define ZB_API_ATRESPONSE 0x88
 
 /*
  * zb_packets.h
@@ -69,8 +71,24 @@ void zb_enter_command_mode() {
  * This implements the AT Request API Frame.
  */
 void zb_send_command_with_argument(char cmd[2], char *data, unsigned char len) {
-	/* TODO not implemented yet. */
-	DIAGNOSTICS("AT Commands not implemented yet.\n");
+	unsigned char buf[MAX_PACKET_SIZE];
+	unsigned char n, i;
+	
+	n = 0;
+	buf[n++] = ZB_API_ATCOMMAND;
+
+	/* frame id. 0 = no ack sent. */
+	buf[n++] = 0x01;
+
+	buf[n++] = cmd[0];
+	buf[n++] = cmd[1];
+	
+	for (i = 0; i < len; i++) {
+		buf[n] = data[i];
+		n++;
+	}
+
+	zb_send_frame(buf, n);
 }
 
 /*

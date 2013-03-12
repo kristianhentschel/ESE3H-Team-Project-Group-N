@@ -53,6 +53,14 @@ int main(void) {
 			case 'p':
 				REQUEST_ping(response_buffer);
 				break;
+			case 'I':
+				printf("Sending ATNI node identity command\n");
+				zb_send_command("NI");
+				break;
+			case 'D':
+				printf("Sending ATND node discover command\n");
+				zb_send_command("ND");
+				break;
 			default:
 				printf("unknown command %c\n", c);
 		}
