@@ -8,6 +8,9 @@
 
 #define PACKET_DELIMETER 0x7E
 
+#define ZB_API_ESCAPE 0x7D
+#define ZB_ESCAPE(x) (x ^ 0x20)
+
 #define ZB_API_TRANSMITREQUEST 0x10
 #define ZB_API_RECEIVEPACKET 0x90
 #define ZB_API_ATCOMMAND 0x08
@@ -35,6 +38,7 @@ char	zb_packet_len;
 /* private global variables */
 static char DEVICE_ID = 0x00;
 static char DEST_BROADCAST = 0;
+
 /* private utility functions */
 static unsigned char zb_checksum(unsigned char *buf, unsigned char len);
 static void zb_send_frame(unsigned char *buf, unsigned char len);
@@ -207,11 +211,20 @@ enum zb_parse_response zb_parse(unsigned char c) {
 	static uint16_t			frame_bytes_seen;
 	static uint16_t			frame_address_bytes_seen;
 	static enum zb_parse_state state = LEX_WAITING;
-	/* see the start of a packet - discard everything else.
-	 * the delimeter character is illegal in data except in a checksum.
-	 * TODO it is legal in checksum and addresses and length. need to use escape mode!
-	 */
-	if (state != LEX_PACKET_CHECKSUM && c == PACKET_DELIMETER) {
+	static int seen_escape;
+
+	if (c == ZB_API_ESCAPE) {
+		seen_escape = 1;
+		return ZB_PARSING;
+	}
+
+	if ( seen_escape ) {
+		c = ZB_ESCAPE(c);
+		seen_escape = 0;
+	}
+
+
+	if (c == PACKET_DELIMETER) {
 		state = LEX_FRAME_LENGTH_MSB;
 		checksum = 0;
 		frame_length = 0;
