@@ -35,7 +35,8 @@ int main(void) {
 	zb_transport_init();
 	zb_set_broadcast_mode(1);
 	zb_set_device_id(0);
-	
+	zb_send_command_with_argument("AP", "\002", 1);
+
 	while ((c = getchar()) != 'q') {
 		if (!isalpha((int) c)) {
 			continue;
@@ -78,7 +79,7 @@ static void *thread_parse(void *arg) {
 
 	while(1){
 		c = zb_getc();
-		printf("%0x ", c);
+		printf("%02x ", c);
 		fflush(stdout);
 
 		switch (zb_parse(c)) {

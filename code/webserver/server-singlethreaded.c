@@ -39,7 +39,7 @@ void handle_request(int fd, char *request);
 /* zigbee serial parser and responder */
 static void *thread_zb_listen(void *arg);
 
-enum http_mime { MIME_TEXT_PLAIN, MIME_TEXT_HTML, MIME_IMAGE_JPEG, MIME_IMAGE_GIF, MIME_IMAGE_PNG, MIME_APPLICATION_OCTET_STREAM};
+enum http_mime { MIME_TEXT_PLAIN, MIME_TEXT_HTML, MIME_IMAGE_JPEG, MIME_IMAGE_GIF, MIME_IMAGE_PNG, MIME_APPLICATION_OCTET_STREAM, MIME_TEXT_CSS, MIME_TEXT_JAVASCRIPT, NUM_MIME};
 enum http_status {HTTP_OK = 200, HTTP_NOT_FOUND = 404, HTTP_BAD_REQUEST = 400, HTTP_INTERNAL_SERVER_ERROR = 500};
 
 void errlog(char *msg) {
@@ -56,6 +56,8 @@ int main(void) {
 	zb_transport_init();
 	zb_set_broadcast_mode(1);
 	zb_set_device_id(0);
+
+	zb_send_command_with_argument("AP", "\002", 1);	//set API mode with Escape characters TODO call this in zb_packets_init()?
 
 	pthread_create(&zbthread, NULL, thread_zb_listen, NULL);
 
@@ -161,31 +163,32 @@ void handle_connection(int fd) {
 
 void http_headers(int fd, int status, char *status_str, int content_type, int content_length) {
 	char buf[1024];
-	char *content_types[sizeof(enum http_mime)];
+	char *content_types[NUM_MIME];
 	content_types[MIME_TEXT_PLAIN] = "text/plain";
 	content_types[MIME_TEXT_HTML]  = "text/html";
 	content_types[MIME_IMAGE_GIF]  = "text/gif";
 	content_types[MIME_IMAGE_PNG]  = "text/png";
 	content_types[MIME_IMAGE_JPEG] = "text/jpeg";
+	content_types[MIME_TEXT_CSS] = "text/css";
+	content_types[MIME_TEXT_JAVASCRIPT] = "text/javascript";
+	content_types[MIME_APPLICATION_OCTET_STREAM] = "application/octet-stream";
 
-	sprintf(buf, "HTTP/1.1 %i %s\r\n", status, status_str);
+	snprintf(buf, sizeof(buf), "HTTP/1.1 %i %s\r\n", status, status_str);
 	write(fd, buf, strlen(buf));
 	
-	sprintf(buf, "Content-Type: %s\r\n", content_types[content_type]);
+	snprintf(buf, sizeof(buf), "Content-Type: %s\r\n", content_types[content_type]);
 	
 	
 	write(fd, buf, strlen(buf));
 
-	sprintf(buf, "Content-Length: %i\r\n", content_length);
+	snprintf(buf, sizeof(buf), "Content-Length: %i\r\n", content_length);
 	write(fd, buf, strlen(buf));
 
-	//sprintf(buf, "Connection: close\r\n");
-	//write(fd, buf, strlen(buf));
+	snprintf(buf, sizeof(buf),  "Connection: close\r\n");
+	write(fd, buf, strlen(buf));
 	
-	sprintf(buf, "\r\n");
+	snprintf(buf, sizeof(buf), "\r\n");
 	write(fd, buf, strlen(buf));
-
-
 }
 
 /* check if the given request host matches any of this servers' hostnames
@@ -230,21 +233,25 @@ enum http_mime file_mime(char *path){
 	for (c = path; *c != '\0'; c++) {
 		if (*c == '.') {
 			ext = c + 1;
-		}
+		} 
 	}
 
 	errlog(ext);
 
-	if (strcasecmp(c, "txt") == 0){
+	if (strcasecmp(ext, "txt") == 0){
 		return MIME_TEXT_PLAIN;
-	} else if (strcasecmp(c, "htm") == 0 || strcasecmp(c, "html")) {
+	} else if (strcasecmp(ext, "htm") == 0 || strcasecmp(ext, "html") == 0) {
 		return MIME_TEXT_HTML;
-	} else if (strcasecmp(c, "jpg") == 0 || strcasecmp(c, "jpeg")) {
+	} else if (strcasecmp(ext, "jpg") == 0 || strcasecmp(ext, "jpeg") == 0) {
 		return MIME_IMAGE_JPEG;
-	} else if (strcasecmp(c, "gif") == 0) {
+	} else if (strcasecmp(ext, "gif") == 0) {
 		return MIME_IMAGE_GIF;
-	} else if (strcasecmp(c, "png") == 0) {
+	} else if (strcasecmp(ext, "png") == 0) {
 		return MIME_IMAGE_PNG;
+	} else if (strcasecmp(ext, "js") == 0) {
+		return MIME_TEXT_JAVASCRIPT;
+	} else if (strcasecmp(ext, "css") == 0) {
+		return MIME_TEXT_CSS;
 	} else {
 		return MIME_APPLICATION_OCTET_STREAM;
 	}
@@ -260,7 +267,7 @@ void respond_string(int fd, char *response) {
  * TODO error checking for write system call, as client may close socket unexpectedly. Also, catch or block SIGPIPE signal when doing this.
  */
 void respond_file(int fd, char *path) {
-	char writebuf[1024];//TODO #define this
+	char writebuf[1024*1024];
 	FILE *docfd;
 	ssize_t count;
 
@@ -371,7 +378,6 @@ void handle_request(int fd, char *request) {
 			free(response);
 		}
 	}
-
 	errlog("--- request handling complete ---");
 }
 

@@ -6,7 +6,10 @@
 #include <time.h>
 #include <ctype.h>
 
-#define TIMEOUT 4
+#define TIMEOUT 1
+
+
+#define appendsprintf(buf, ...) 
 /* this implementation of the REQUEST functions is not thread-safe. only one thread should be calling them. */
 
 /* private types */
@@ -113,19 +116,39 @@ void REQUEST_ping(char *buf) {
 
 void REQUEST_data(char *buf) {
 	int i;
+	char internalbuf[REQUEST_RESULT_BUFSIZE];
 	DIAGNOSTICS("DATA: Returning current sensor data.\n");
+
+	buf[0] = '\0';
+	snprintf(internalbuf, REQUEST_RESULT_BUFSIZE,
+			"{\"sensors\": [");
+	strcat(buf, internalbuf);
 
 	for (i = 0; i < SENSOR_COUNT; i++) {
 		pthread_mutex_lock(&sensor_results[i].lock);
+
+		snprintf(internalbuf, REQUEST_RESULT_BUFSIZE,
+				"{\"value\": %d, \"time\": %d, \"offset\": %d}",
+				(int) sensor_results[i].data - sensor_configs[i].offset,
+				(int) sensor_results[i].time,
+				(int) sensor_configs[i].offset);
+		strcat(buf, internalbuf);
+
+		if (i < SENSOR_COUNT - 1) {
+			strcat(buf, ",\n");
+		}
+
 		DIAGNOSTICS("DATA: Sensor %d: Raw %d, Offset %d, Corrected %d. Last read at %d\n",
 				i,
 				(int) sensor_results[i].data,
 				(int) sensor_configs[i].offset,
 				(int) (sensor_results[i].data - sensor_configs[i].offset),
 				(int) sensor_results[i].time);
+
 		pthread_mutex_unlock(&sensor_results[i].lock);
 	}
-	sprintf(buf, "sensor data for sensor 2: %d, last read at %d\n", sensor_results[2].data, sensor_results[2].time);
+
+	strcat(buf, "]}");
 }
 
 
