@@ -13,9 +13,9 @@ Instead, it was decided to program the entire system in C, as this would allow f
 A layered approach to the software architecture was taken. The system is modelled in three main layers, roughly following the OSI network systems model \cite{osi-model}. Each layer would define a well-known interface, and only the layer above would need to access this. Each layer can have several implementations to account for the fact that the embedded scale unit system would be very different from the Linux system on the master unit.
 
 \begin{itemize}
-	\item \bf{Transport Layer:} The lowest layer maps primitive read and write methods to the underlying serial devices and provides buffering for incoming data.
-	\item \bf{Packet Layer:} This implements a packet protocol and provides methods for parsing incoming data, as well as packaging outgoing data.
-	\item \bf{Application Layer:} The highest layer implements the individual application functionality and defines responses to incoming packets, as well as interacting with other system components, such as the user interface or the analogue-to-digital converter.
+	\item \textbf{Transport Layer:} The lowest layer maps primitive read and write methods to the underlying serial devices and provides buffering for incoming data.
+	\item \textbf{Packet Layer:} This implements a packet protocol and provides methods for parsing incoming data, as well as packaging outgoing data.
+	\item \textbf{Application Layer:} The highest layer implements the individual application functionality and defines responses to incoming packets, as well as interacting with other system components, such as the user interface or the analogue-to-digital converter.
 \end{itemize}
 
 \subsection{Packet Protocol}
@@ -25,7 +25,7 @@ ZigBee nodes can operate in two seperate modes. Firstly, transparent mode is the
 
 Originally, a simple packet system was devised to run on top of the transparent mode. This was later found to be too unreliable and inefficient due to the aforementioned interleaving of data. Since this design was very similar to the ZigBee API protocol, few changes were required to send the payload data wrapped in packages conforming to this.
 
-The payload consists of an \em{Op-Code} to signify the current operation (ping, pong, measure request, measure response), a \em{device identifier} that is set at compile-time, and the actual data in the case of a measure response. This data is encoded as, in this case four, hexadecimal ASCII characters rather than directly representing it as bytes. This decision was made to avoid having to escape control characters such as \tt{7E} which defines the beginning of a packet in the ZigBee API. In the original design a length byte for the data was included, but this was abandoned since the wrapping API packet already contains a length field.
+The payload consists of an \emph{Op-Code} to signify the current operation (ping, pong, measure request, measure response), a \emph{device identifier} that is set at compile-time, and the actual data in the case of a measure response. This data is encoded as, in this case four, hexadecimal ASCII characters rather than directly representing it as bytes. This decision was made to avoid having to escape control characters such as \texttt{7E} which defines the beginning of a packet in the ZigBee API. In the original design a length byte for the data was included, but this was abandoned since the wrapping API packet already contains a length field.
 
 \subsection{User Interface}
 The user interface to the system has been defined during the requirements gathering process to be a very simple web application that should support taking readings of the current system state by intitiating measurements, as well as providing simple calibration of the scales. Therefore a mock-up was drawn up, and based on this a static HTML/CSS prototype was generated (See figure \ref{fig-ui-screenshot}. This could then be made interactive by attaching javascript actions to the buttons.
@@ -33,9 +33,9 @@ The user interface to the system has been defined during the requirements gather
 The client side application (the aforementioned javascript, running in a web-browser) would make asynchronous requests to special URLs on the server that are mapped to methods initiating data transfers between the master and scale units, or returning data previously stored on the server.
 
 \begin{itemize}
-	\item \tt{/api/data} returns a JSON \cite{json-spec} object containing the data stored on the server for all sensors.
-	\item \tt{/api/calibrate} initiates a measurement on all scale units and sets the values received to be the zero-points for that particular sensor.
-	\item \tt{/api/measure} initiates a measurement and stores the results in a server-side structure to be later retreived by a \tt{data} request.
+	\item \texttt{/api/data} returns a JSON \cite{json-spec} object containing the data stored on the server for all sensors.
+	\item \texttt{/api/calibrate} initiates a measurement on all scale units and sets the values received to be the zero-points for that particular sensor.
+	\item \texttt{/api/measure} initiates a measurement and stores the results in a server-side structure to be later retreived by a \texttt{data} request.
 \end{itemize}
 
 It was decided that for the prototype, the master unit program was to be integrated with a previously (for Networked Systems 3 coursework \cite{ns3-webserver}) produced web server implementation, which should require minimal adjustments to support the added API functionality.
