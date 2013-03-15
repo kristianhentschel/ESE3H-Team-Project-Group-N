@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Wireless Weighing System</title>
+		<link rel="stylesheet" type="text/css" href="style.css" />
+		<meta name="viewport" content="width=device-width; initial-scale=1" />
+	</head>
+
+	<body>
+		<div class="screen main" id="screen-main">
+			<h1>Weighing System</h1>
+			<ol class="results">
+				<li>
+					<span class="data" id="data-1-kg">0</span> kg
+					(<span class="data debug" id="data-1-raw">0</span>)
+					<br /><span class="muted">Sensor 1</span>
+				</li>
+				<li>
+					<span class="data" id="data-2-kg">0</span> kg
+					(<span class="data debug" id="data-2-raw">0</span>)
+					<br /><span class="muted">Sensor 2</span>
+				</li>
+				<li>
+					<span class="data" id="data-3-kg">0</span> kg
+					(<span class="data debug" id="data-3-raw">0</span>)
+					<br /><span class="muted">Sensor 3</span>
+				</li>
+				<li>
+					<span class="data" id="data-4-kg">0</span> kg
+					(<span class="data debug" id="data-4-raw">0</span>)
+					<br /><span class="muted">Sensor 4</span>
+				</li>
+			</ol>
+			
+			<p>
+				<a class="button button-do do-data">Refresh Display</a>
+			</p>
+
+			<p>
+				<a class="button button-do do-measure">Measure</a>
+			</p>
+
+			<p>
+				<a class="button button-right go-calibrate" href="#screen-calibrate">Calibration</a>
+			</p>
+			<p>
+				<a class="button button-right go-instructions" href="#screen-instructions">Hints</a>
+			</p>
+		</div>
+
+		<div class="screen calibrate" id="screen-calibrate">
+			<h1>Calibration</h1>
+			<p>To calibrate the system, remove any load from the scale units. Then press the button below to set the zero-point.</p>
+			<p>
+				<a class="button button-do do-calibrate">Calibrate</a>
+			</p>
+			<p>
+				<a class="button button-left go-main" href="#screen-main">Back</a>
+			</p>
+		</div>
+
+		<div class="screen instructions" id="screen-instructions">
+			<h1>Hints</h1>
+			<p>Activate scale units only after this control unit has been started, cut power and re-start them if necessary.</p>	
+			<p>
+				<a class="button button-left go-main" href="#screen-main">Back</a>
+			</p>
+		</div>
+
+
+		<script type="text/javascript" src="jquery-1.9.1.min.js"></script>
+		<script type="text/javascript" src="script.js"></script>
+	</body>
+</html>

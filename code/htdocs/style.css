@@ -1,0 +1,66 @@
+html, body {
+	padding:0;
+	margin:0;
+	width:100%;
+}
+
+h1 {
+	margin: 8px;
+	text-align: center;
+	display:none;
+}
+
+.screen {
+	padding:8px;
+	border:1px solid #ccc;
+	margin:8px;
+}
+
+.button{
+	background-color:#eee;
+	border:1px outset #ccc;
+	padding:16px;
+	margin:8px;
+	display:block;
+	border-radius:8px;
+	font-weight:bold;
+	text-decoration:none;
+	color:inherit;
+	cursor:pointer;
+	font-size:110%;
+	text-align:center;
+}
+
+.button-do{
+	background-color:#cfc;
+}
+
+.button-right{
+
+}
+.button-left{}
+
+ol.results {
+	list-style-type:none;
+	padding:0;
+	margin:8px 0 0 0;
+}
+
+ol.results li {
+    background-color: #EEF;
+    padding: 12px;
+    margin: 8px;
+    font-size: 100%;
+}
+
+span.data {
+    font-weight: bold;
+}
+
+span.debug {
+	font-weight: normal;
+}
+span.muted {
+	font-weight:normal;
+	color: #999;
+}
