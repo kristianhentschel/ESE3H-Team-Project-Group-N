@@ -15,9 +15,9 @@ static unsigned int DMA_ADC_VALUE;
 int main(void) {
 	char c;
 
-	zb_transport_init();
+	zb_packets_init();
 	zb_set_broadcast_mode(0);
-	zb_set_device_id(1);
+	zb_set_device_id(4);
 
 	DMA_ADC_VALUE = 128;
 

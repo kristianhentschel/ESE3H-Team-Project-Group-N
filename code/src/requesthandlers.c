@@ -1,15 +1,14 @@
-#include "master_requesthandlers.h"
+#include "requesthandlers.h"
 #include "zb_transport.h"
 #include "zb_packets.h"
 #include "diagnostics.h"
 #include <pthread.h>
 #include <time.h>
 #include <ctype.h>
+#include <string.h>
 
 #define TIMEOUT 1
 
-
-#define appendsprintf(buf, ...) 
 /* this implementation of the REQUEST functions is not thread-safe. only one thread should be calling them. */
 
 /* private types */
@@ -34,14 +33,15 @@ enum comms_state {STATE_IDLE, STATE_PENDING_MEASURE, STATE_PENDING_CALIBRATE};
 
 /* private variables */
 static enum comms_state state;
-time_t last_response_time = 0;
+time_t last_request_time = 0;
+
 /* static methods */
 static unsigned int hexToInt(char *buf, unsigned char len);
+static double convert_sensor_value(double value);
 
+/* check if the system is still waiting on previous responses to occur within TIMEOUT of last transmission. */
 static int busy() {
-	/* TODO implement time-out and state thingy.
-	 * For testing, allowing all comms all the time. */
-	if (time(NULL) - last_response_time > TIMEOUT) {
+	if (time(NULL) - last_request_time > TIMEOUT) {
 		state = STATE_IDLE;
 	}
 	return state != STATE_IDLE;
@@ -72,6 +72,7 @@ void REQUEST_measure(char *buf) {
 	if (!busy()) {
 		DIAGNOSTICS("MEASURE: sending broadcast message to get measurements\n");
 		state = STATE_PENDING_MEASURE;
+		last_request_time = time(NULL);
 		zb_send_packet(OP_MEASURE_REQUEST, NULL, 0);
 		sprintf(buf, "200 OK Measurement requested.\n");
 	} else {
@@ -93,6 +94,7 @@ void REQUEST_calibrate(char *buf) {
 			sensor_configs[i].calibrated = 0;
 		}
 		state = STATE_PENDING_CALIBRATE;
+		last_request_time = time(NULL);
 		zb_send_packet(OP_MEASURE_REQUEST, NULL, 0);
 		sprintf(buf, "200 OK Calibration requested.\n");
 	} else {
@@ -106,6 +108,7 @@ void REQUEST_ping(char *buf) {
 		DIAGNOSTICS("PING sent.\n");
 		state = STATE_PENDING_CALIBRATE;
 		zb_send_packet(OP_PING, NULL, 0);
+		last_request_time = time(NULL);
 		sprintf(buf, "200 OK Ping request sent.\n");
 	} else {
 		DIAGNOSTICS("PING request not honoured as the system is currently busy.\n");
@@ -128,8 +131,9 @@ void REQUEST_data(char *buf) {
 		pthread_mutex_lock(&sensor_results[i].lock);
 
 		snprintf(internalbuf, REQUEST_RESULT_BUFSIZE,
-				"{\"value\": %d, \"time\": %d, \"offset\": %d}",
+				"{\"value\": %d, \"converted\": %.2f, \"time\": %d, \"offset\": %d}",
 				(int) sensor_results[i].data - sensor_configs[i].offset,
+				convert_sensor_value((double)sensor_results[i].data - (double)sensor_configs[i].offset),
 				(int) sensor_results[i].time,
 				(int) sensor_configs[i].offset);
 		strcat(buf, internalbuf);
@@ -147,7 +151,6 @@ void REQUEST_data(char *buf) {
 
 		pthread_mutex_unlock(&sensor_results[i].lock);
 	}
-
 	strcat(buf, "]}");
 }
 
@@ -155,7 +158,6 @@ void REQUEST_data(char *buf) {
 
 void HANDLE_packet_received() {
 	int d, i;
-	last_response_time = time(NULL);
 	switch (zb_packet_op) {
 		case OP_PING:
 			DIAGNOSTICS("Received PING request from %d.\n", zb_packet_from);
@@ -219,4 +221,12 @@ static unsigned int hexToInt(char *buf, unsigned char len) {
 		result = result * 16 + v;
 	}
 	return result;
+}
+
+/* convert a data value received from a sensor to a weight value in kilogram
+ * TODO this is a mock calculation as actual data for the real load cells and
+ * strain gauge configurations is not yet available.
+ */
+double convert_sensor_value(double value) {
+	return ((double) value) / 41;
 }

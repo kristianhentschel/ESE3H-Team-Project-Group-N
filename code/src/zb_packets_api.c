@@ -10,7 +10,7 @@
 
 #define ZB_API_ESCAPE 0x7D
 #define ZB_ESCAPE(x) (x ^ 0x20)
-
+#define ZB_NEEDS_ESCAPE(x) ( x == 0x7E || x == 0x7D || x == 0x11 || x == 0x13 )
 #define ZB_API_TRANSMITREQUEST 0x10
 #define ZB_API_RECEIVEPACKET 0x90
 #define ZB_API_ATCOMMAND 0x08
@@ -43,6 +43,15 @@ static char DEST_BROADCAST = 0;
 static unsigned char zb_checksum(unsigned char *buf, unsigned char len);
 static void zb_send_frame(unsigned char *buf, unsigned char len);
 
+/*
+ * initialise transport layer, set escape mode to on as required in parse function
+ * TODO do escaping in send packet methods!
+ */
+void zb_packets_init() {
+	DIAGNOSTICS("Initialised Packets layer\n");
+	zb_transport_init();
+	zb_send_command_with_argument("AP", "\002", 1);
+}
 
 /*
  * device id is used inside the packet to identify individual sensors.
@@ -57,15 +66,6 @@ void zb_set_device_id(char id) {
  */
 void zb_set_broadcast_mode(char broadcast) {
 	DEST_BROADCAST = broadcast;
-}
-
-
-/*
- * Command mode is not required with API firmware, so this does nothing.
- */
-void zb_enter_command_mode() {
-	/* this space intentionally left empty */
-	return;
 }
 
 /*
@@ -120,7 +120,8 @@ void zb_send_packet(char op, unsigned char *data, unsigned char len) {
 	/* frame id. 0 = no ack sent. */
 	buf[n++] = 0x00;
 
-	/* 64 bit destination address. for coord and broadcast, first 6 bytes are 0. */
+	/* 64 bit destination address. for coord and broadcast, first 6 bytes are 0.
+	 * TODO store this as two uint32 variables for more flexibility */
 	for (i = 0; i < 6; i++) {
 		buf[n++] = 0x00;
 	}
@@ -162,7 +163,7 @@ void zb_send_packet(char op, unsigned char *data, unsigned char len) {
 /* packages the api-specific structure part in a serial frame with a checksum */
 void zb_send_frame(unsigned char *buf, unsigned char len){
 	unsigned char frame[MAX_PACKET_SIZE];
-	unsigned char n, i;
+	unsigned char n, i, chk;
 
 	n = 0;
 	frame[n++] = PACKET_DELIMETER;
@@ -173,7 +174,14 @@ void zb_send_frame(unsigned char *buf, unsigned char len){
 		frame[n++] = buf[i];
 	}
 
-	frame[n++] = zb_checksum(buf, len);
+	chk = zb_checksum(buf, len);
+	if (ZB_NEEDS_ESCAPE(chk)) {
+		frame[n++] = ZB_API_ESCAPE;
+		frame[n++] = ZB_ESCAPE(chk);
+	} else {
+		frame[n++] = chk;
+	}
+
 	frame[n++] = '\0';
 	
 	DIAGNOSTICS("Packaged %d bytes in a frame of %d bytes and sent it to the transport layer.\n", len, n);

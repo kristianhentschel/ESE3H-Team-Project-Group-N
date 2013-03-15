@@ -19,6 +19,10 @@
  *
  * Implementation of a simple packetization layer.
  *
+ * This file is redundant, and the implementation has not yet been updated for the recent
+ * API changes. The packet structure used herein relies on using radios in AT mode, and is
+ * simpler but less robust than the API mode implementation.
+ *
  */
 
 /* global variables as declared in .h file */

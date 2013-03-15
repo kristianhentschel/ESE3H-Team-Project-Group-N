@@ -6,7 +6,7 @@
 #include <ctype.h>
 #include "zb_transport.h"
 #include "zb_packets.h"
-#include "master_requesthandlers.h"
+#include "requesthandlers.h"
 
 
 /*
@@ -32,10 +32,9 @@ int main(void) {
 
 	pthread_create(&parser_thread, NULL, thread_parse, NULL);
 
-	zb_transport_init();
+	zb_packets_init();
 	zb_set_broadcast_mode(1);
 	zb_set_device_id(0);
-	zb_send_command_with_argument("AP", "\002", 1);
 
 	while ((c = getchar()) != 'q') {
 		if (!isalpha((int) c)) {

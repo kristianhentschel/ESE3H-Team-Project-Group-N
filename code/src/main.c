@@ -18,23 +18,23 @@ int main(void)
 {
 	unsigned char c;
 	
-	/* set up ADC3 */
+	/* set up ADC3 for continuous DMA mode */
 	ADC_Config();
 
-	/* Start ADC3 Software Conversion */ 
+	/* Start ADC3 Software Conversions */ 
 	ADC_SoftwareStartConv(ADC3);
 
-	/* Setup UART */
-	zb_transport_init();
+	/* Setup packet layer / transport layer UART */
+	zb_packets_init();
 
 	zb_set_broadcast_mode(0);
 	zb_set_device_id(2);
+
+	zb_send_packet(OP_PONG, "", 0);
 	
 	while (1)
 	{
 		c = zb_getc();
-//		if (c == 'O')
-//			zb_send("K", 1);
 		
 		switch (zb_parse(c)) {
 			case ZB_VALID_PACKET:

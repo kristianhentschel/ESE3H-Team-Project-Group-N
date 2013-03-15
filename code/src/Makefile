@@ -1,18 +1,31 @@
+#can't currently compile embedded target in here, still need to copy relevant files to ARM/Keil MDK project folder
 CFLAGS = -W -Wall -g
 CC = gcc
 
+DIR_BIN = ../bin
+
 all: master_test scale_test master_webserver
 
-master_test: master_test.o zb_packets_api.o zb_transport_tty.o master_requesthandlers.o
-	gcc -o master_test -lpthread master_test.o zb_packets_api.o zb_transport_tty.o master_requesthandlers.o
+.PHONY : master_test
+master_test: ${DIR_BIN}/master_test
+.PHONY : scale_test
+scale_test: ${DIR_BIN}/scale_test
+.PHONY : master_webserver
+master_webserver: ${DIR_BIN}/master_webserver
 
-scale_test: scale_test.o zb_packets_api.o zb_transport_tty.o
-	gcc -o scale_test -lpthread scale_test.o zb_packets_api.o zb_transport_tty.o
 
-master_webserver: webserver/server-singlethreaded.o webserver/linkedstringbuffer.o zb_packets_api.o zb_transport_tty.o master_requesthandlers.o
-	gcc -o master_webserver -lpthread webserver/server-singlethreaded.o webserver/linkedstringbuffer.o zb_packets_api.o zb_transport_tty.o master_requesthandlers.o
+${DIR_BIN}/master_test: master_test.o zb_packets_api.o zb_transport_tty.o requesthandlers.o
+	gcc -o ${DIR_BIN}/master_test -lpthread master_test.o zb_packets_api.o zb_transport_tty.o requesthandlers.o
 
+${DIR_BIN}/scale_test: scale_test.o zb_packets_api.o zb_transport_tty.o
+	gcc -o ${DIR_BIN}/scale_test -lpthread scale_test.o zb_packets_api.o zb_transport_tty.o
+
+${DIR_BIN}/master_webserver: master_webserver.o linkedstringbuffer.o zb_packets_api.o zb_transport_tty.o requesthandlers.o
+	gcc -o ${DIR_BIN}/master_webserver -lpthread master_webserver.o linkedstringbuffer.o zb_packets_api.o zb_transport_tty.o requesthandlers.o
 
 
 clean:
-	rm -f *.o webserver/*.o master_test scale_test master_webserver
+	rm -f *.o
+	cd ${DIR_BIN}
+	rm -f master_test scale_test master_webserver *.exe
+

@@ -1,6 +1,5 @@
 #include "zb_transport.h"
 #include "stm32f4_discovery.h"
-//#include "misc.h"
 
 /*
  * zb_transport_embedded.h
@@ -111,7 +110,7 @@ void zb_send(unsigned char *buf, unsigned char len) {
 /* disable interrupts, take character from buffer, re-enable interrupts */
 char zb_getc() {
 	/* TODO temporary hack - uses polling from usart peripheral rather than interrupts. */
-	while(! (USART3->SR & USART_FLAG_RXNE) )
+		while(! (USART3->SR & USART_FLAG_RXNE) )
 		;
 	return USART_ReceiveData(USART3) & 0xff;
 	

@@ -1,8 +1,8 @@
 /* zigbee includes */
-#include "../zb_packets.h"
-#include "../zb_transport.h"
-#include "../diagnostics.h"
-#include "../master_requesthandlers.h"
+#include "zb_packets.h"
+#include "zb_transport.h"
+#include "diagnostics.h"
+#include "requesthandlers.h"
 
 /* api paths */
 #define PATH_API_BASE		"api/"
@@ -53,11 +53,9 @@ int main(void) {
 	pthread_t			zbthread;
 
 	//set up zigbee specific stuff
-	zb_transport_init();
+	zb_packets_init();
 	zb_set_broadcast_mode(1);
 	zb_set_device_id(0);
-
-	zb_send_command_with_argument("AP", "\002", 1);	//set API mode with Escape characters TODO call this in zb_packets_init()?
 
 	pthread_create(&zbthread, NULL, thread_zb_listen, NULL);
 
@@ -333,7 +331,8 @@ void handle_request(int fd, char *request) {
 			is_api_request = 1;
 			response = strdup(response_buf);
 		}
-	} else if ((content_length = file_size(path)) < 0) {
+	} else if ((content_length = file_size( (strcmp(path, "HTTP/1.1") != 0) ? path : strcpy(path, "index.html"))) < 0) {
+		/* TODO let's not do black magic assignments and ternaries in if conditions. */
 		/* file not found or un-stat-able */
 		errlog("file not found");
 		status = HTTP_NOT_FOUND;
