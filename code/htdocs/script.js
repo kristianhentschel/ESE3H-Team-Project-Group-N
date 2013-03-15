@@ -6,6 +6,7 @@ $(document).ready(function(){
 	$("#screen-main").show();
 	
 	$(".button.do-measure").click(function(){
+			$(".results li").removeClass("valid");
 			$.get("/api/measure/", function(data) {
 					console.log(data);
 					if (!data_update_manually) {
@@ -15,6 +16,7 @@ $(document).ready(function(){
 		});
 
 	$(".button.do-calibrate").click(function(){
+			$(".results li").removeClass("valid");
 			$.get("/api/calibrate/", function(data){
 					$(".screen").hide();
 					$(".screen.main").show();
@@ -42,11 +44,11 @@ $(document).ready(function(){
 	function data_update() {
 		$.getJSON("/api/data/", function(data){
 				console.log(data);
-				
-				$("#data-1-raw").text(data.sensors[1].value);
-				$("#data-2-raw").text(data.sensors[2].value);
-				$("#data-3-raw").text(data.sensors[3].value);
-				$("#data-4-raw").text(data.sensors[4].value);
+				for (i = 1; i <= 4; i++) {
+					$("#data-" + i).text(data.sensors[i].converted);
+					$("#data-" + i + "-raw").text(data.sensors[i].value);
+				}
+				$(".results li").addClass("valid");
 			});
 	
 	}

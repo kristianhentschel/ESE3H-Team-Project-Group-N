@@ -3,7 +3,7 @@
 	<head>
 		<title>Wireless Weighing System</title>
 		<link rel="stylesheet" type="text/css" href="style.css" />
-		<meta name="viewport" content="width=device-width; initial-scale=1" />
+		<meta name="viewport" content="width=device-width; initial-scale=1; maximum-scale=1; user-scalable=no" />
 	</head>
 
 	<body>
@@ -11,24 +11,40 @@
 			<h1>Weighing System</h1>
 			<ol class="results">
 				<li>
-					<span class="data" id="data-1-kg">0</span> kg
-					(<span class="data debug" id="data-1-raw">0</span>)
-					<br /><span class="muted">Sensor 1</span>
+				<div class="left-block">
+					<span class="data" id="data-1">0</span>kg
+					/<span class="data debug" id="data-1-raw">0</span>
+				</div>
+				<div class="right-block">
+					<span class="muted">Sensor 1</span>
+				</div>
 				</li>
 				<li>
-					<span class="data" id="data-2-kg">0</span> kg
-					(<span class="data debug" id="data-2-raw">0</span>)
-					<br /><span class="muted">Sensor 2</span>
+				<div class="left-block">
+					<span class="data" id="data-2">0</span>kg
+					/<span class="data debug" id="data-2-raw">0</span>
+				</div>
+				<div class="right-block">
+					<span class="muted">Sensor 2</span>
+				</div>
 				</li>
 				<li>
-					<span class="data" id="data-3-kg">0</span> kg
-					(<span class="data debug" id="data-3-raw">0</span>)
-					<br /><span class="muted">Sensor 3</span>
+				<div class="left-block">
+					<span class="data" id="data-3">0</span>kg
+					/<span class="data debug" id="data-3-raw">0</span>
+				</div>
+				<div class="right-block">
+					<span class="muted">Sensor 3</span>
+				</div>
 				</li>
 				<li>
-					<span class="data" id="data-4-kg">0</span> kg
-					(<span class="data debug" id="data-4-raw">0</span>)
-					<br /><span class="muted">Sensor 4</span>
+				<div class="left-block">
+					<span class="data" id="data-4">0</span>kg
+					/<span class="data debug" id="data-4-raw">0</span>
+				</div>
+				<div class="right-block">
+					<span class="muted">Sensor 4</span>
+				</div>
 				</li>
 			</ol>
 			
@@ -44,7 +60,7 @@
 				<a class="button button-right go-calibrate" href="#screen-calibrate">Calibration</a>
 			</p>
 			<p>
-				<a class="button button-right go-instructions" href="#screen-instructions">Hints</a>
+				<a class="button button-right go-instructions" href="#screen-instructions">Instructions</a>
 			</p>
 		</div>
 
@@ -60,8 +76,8 @@
 		</div>
 
 		<div class="screen instructions" id="screen-instructions">
-			<h1>Hints</h1>
-			<p>Activate scale units only after this control unit has been started, cut power and re-start them if necessary.</p>	
+			<h1>Instructions</h1>
+			<p>A short user manual should be included here.</p>
 			<p>
 				<a class="button button-left go-main" href="#screen-main">Back</a>
 			</p>

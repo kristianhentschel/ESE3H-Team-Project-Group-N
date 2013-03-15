@@ -2,6 +2,7 @@ html, body {
 	padding:0;
 	margin:0;
 	width:100%;
+    font-family:sans-serif;
 }
 
 h1 {
@@ -32,7 +33,7 @@ h1 {
 }
 
 .button-do{
-	background-color:#cfc;
+	background-color:#9c9;
 }
 
 .button-right{
@@ -47,10 +48,17 @@ ol.results {
 }
 
 ol.results li {
-    background-color: #EEF;
-    padding: 12px;
-    margin: 8px;
+    background-color: #FFF;
+	-moz-transition: background-color 0.5s; /* Firefox 4 */
+	-webkit-transition: background-color 0.5s; /* Safari and Chrome */
+	-o-transition: background-color 0.5s; /* Opera */
+    padding: 8px;
+    margin: 4px;
     font-size: 100%;
+}
+
+ol.results li.valid {
+	background-color: #efe;
 }
 
 span.data {
@@ -63,4 +71,14 @@ span.debug {
 span.muted {
 	font-weight:normal;
 	color: #999;
+}
+
+.right-block, .left-block{
+		display:inline-block;
+		margin:8px 0;
+		width:45%;
+}
+.right-block{
+		padding-left:8px;
+		border-left:1px solid #ccc;
 }
