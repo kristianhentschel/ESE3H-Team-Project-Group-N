@@ -74,7 +74,7 @@ Initialisation and settings are provided through the \texttt{zb\_packets\_init},
 %TODO missing abstraction: Stop/close/destroy call should be to packets layer and handed down to transport.
 
 \subsubsection{ZigBee Packet Structure and Parsing Methodology}
-The ZigBee API defines data frames transmitted across the serial link between the host and ZigBee device. These packets are parsed and, if the packet is a transmission request, wrapped in a different 80211x packet for transmission over the air, and re-packaged in a serial data frame on the other end.
+The ZigBee API defines data frames transmitted across the serial link between the host and ZigBee device. These packets are parsed and, if the packet is a transmission request, wrapped in a different 802.15.4 packet for transmission over the air, and re-packaged in a serial data frame on the other end.
 %TODO quote proper standard and check terminology
 
 Re-Transmission if checksums fail or no ACKs are received for these over-the-air packets is handled at the ZigBee layer that is equivalent to the Network layer in the OSI model, and in this implementation is completely independent from even the application transport layer. This was taken as a given as part of the decision to use the ZigBee devices and protocol, therefore the following discussion does not take this lower layer into account.
@@ -83,14 +83,22 @@ Re-Transmission if checksums fail or no ACKs are received for these over-the-air
 
 Parsing of the incoming character stream is achieved through the \texttt{zb\_parse} method which must be called on every character received. It returns a status code to indicate when a complete packet has been received. At this point, globally available variables are filled with the relevant information (op code, device id, data, length) from the packet.
 
-This method is implemented as a finite-state-machine with the state maintained in static local variables. %TODO expand on this?
+This method is implemented as a finite-state-machine with the state maintained in static local variables. 
 
 \subsection{Application Layer}
-%TODO add interaction diagram to explain this.
-Figure \ref{interaction-diagram} shows the interaction between the various components for servicing a user request for updating the measurements. One scale unit is shown exemplary.
+\begin{figure}
+\includegraphics[width=\textwidth]{images/communications-diagram.pdf}
+\label{communications-diagram}
+\caption{Application Level Communications Diagram}
+\end{figure}
+Figure \ref{communications-diagram} shows the interaction between the various components for servicing a user request for updating the measurements. One scale unit is shown exemplary.
 
 \subsubsection{Master Unit and User Interface}
-request handlers, maintaining state, calibration and storage of sensor results.
+The user interface is implemented as an HTML web page styled with CSS and all client side logic is based on the jQuery Javascript library \cite{jquery} which provides abstraction for sending remote HTTP requests and handling responses to these.
+
+Based on the use cases established in the requirements engineering section, the interface is kept as simple as possible. Four Sensor display elements are included, which show the raw value received from each sensor as well as the conversion to kilograms.
+
+This conversion is performed on the server, as the method used for this is expected to change once specifications for the actual load cells are available.
 
 \subsubsection{Scale Unit}
 scale unit is an infinite loop: wait for packet, send response, wait for next. ADC set up for continuous DMA conversions.
