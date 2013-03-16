@@ -21,11 +21,13 @@
 \BOOKMARK [2][-]{subsection.3.1.6}{Packet Layer}{section.3.1}% 21
 \BOOKMARK [2][-]{subsection.3.1.7}{Application Layer}{section.3.1}% 22
 \BOOKMARK [1][-]{section.3.2}{Hardware Implementation}{chapter.3}% 23
-\BOOKMARK [2][-]{subsection.3.2.1}{Strain Gauge and Wheatstone Bridge}{section.3.2}% 24
-\BOOKMARK [2][-]{subsection.3.2.2}{Instrumentation Amplifier}{section.3.2}% 25
-\BOOKMARK [0][-]{chapter.4}{Evaluation}{}% 26
-\BOOKMARK [1][-]{subsection.4.0.3}{Testing Strategy and Results}{chapter.4}% 27
-\BOOKMARK [2][-]{subsection.4.0.4}{Status Report}{subsection.4.0.3}% 28
-\BOOKMARK [2][-]{subsection.4.0.5}{Future Work}{subsection.4.0.3}% 29
-\BOOKMARK [0][-]{chapter.5}{Conclusion}{}% 30
-\BOOKMARK [1][-]{section.5.1}{Contributions}{chapter.5}% 31
+\BOOKMARK [2][-]{subsection.3.2.1}{Microcontroller}{section.3.2}% 24
+\BOOKMARK [2][-]{subsection.3.2.2}{Wireless Communication Modules}{section.3.2}% 25
+\BOOKMARK [2][-]{subsection.3.2.3}{Strain Gauge and Wheatstone Bridge}{section.3.2}% 26
+\BOOKMARK [2][-]{subsection.3.2.4}{Instrumentation Amplifier}{section.3.2}% 27
+\BOOKMARK [0][-]{chapter.4}{Evaluation}{}% 28
+\BOOKMARK [1][-]{subsection.4.0.5}{Testing Strategy and Results}{chapter.4}% 29
+\BOOKMARK [2][-]{subsection.4.0.6}{Status Report}{subsection.4.0.5}% 30
+\BOOKMARK [2][-]{subsection.4.0.7}{Future Work}{subsection.4.0.5}% 31
+\BOOKMARK [0][-]{chapter.5}{Conclusion}{}% 32
+\BOOKMARK [1][-]{section.5.1}{Contributions}{chapter.5}% 33
