@@ -1,0 +1,4 @@
+As stated an Instrumentation amplifier is required to increase the range of output voltage from the wheatstone bridge to a more manageable level for the microcontroller. Given that a microcontroller that has a 3 volt ADC is being used, the best thing to do is amplify the largest possible output from the bridge up to 3 volts that way the output should range from 0 to 3 volts. 
+
+Given that the maximum voltage on the output of the wheatstone bridge of 0.62V this would make the required gain of the INA 3V/0.62V which is 4.8. So using the equation for gain obtained from the datasheet of the INA \ref{ina} to calculate the resistor required which is Rg = 1 + 2Ra/Av therefore in this case Rg = 1 + 49.4K/4.8
+so Rg is 10.3KΩ resistor. 
