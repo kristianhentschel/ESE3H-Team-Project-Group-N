@@ -1,0 +1,22 @@
+Things that should be mentioned in here:
+
+Integrate with strain gauges, update conversion method, test accuracy and calibration with known weights.
+
+Scale units should be ported to M0 based system which will lead to smaller PCB. Need to be placed in IP-65 boxes to meet client's requirements.
+
+Power usage at 250mA for scale units is too high. Minimise power usage through power supply redesign. Also, the ZigBee devices on scale units should be configured as end-devices, and transport layer logic should support pin sleep mode to turn the radio off when it is not required.
+
+Test for robustness by modifying units to send invalid packets, or provide artificially generated RF interference.
+
+Incorporate visual feedback in user interface if a unit does not respond to a measurement request.
+
+Run a user test with mechanical engineers who will be using the system, and confirm that it is simple enough for them to set-up and take down for redeployment in different locations. Provide a user manual.
+
+Integrate the Raspberry Pi master unit with a USB wifi dongle, configure hostapd and dnsmasq to create a hot-spot without hte need for an external router.
+
+Analogue Design tested by replacing strain gauge with potentiometer of same resistance range, but it still does not work with the calculated gain resistance for the differential amplifier.
+
+\subsection{Testing Strategy and Results}
+\subsection{Status Report}
+\subsection{Future Work}
+
