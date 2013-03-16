@@ -12,16 +12,17 @@ The pins between the Raspberry Pi and XBee module were connected as shown in Fig
     \hline
     \bf{Pin (Rapsberry Pi)} & \bf{Function (Rapsberry Pi)} & \bf{Pin (XBee)} & \bf{Function (XBee)} \\ \hline
      - & - & 1 & \(V_{CC}\) \\ \hline
-	10 & Rx & 2 & \(D_{OUT}\) \\ \hline
-	8 & Tx & 3 & \(D_{IN}\) \\ \hline
-	12 & GPIO & 5 & Reset \\ \hline
-	25 & GND & 10 & GND \\ \hline
-	13 & GPIO & 12 & Sleep \\ \hline
-	11 & GPIO & 13 & CTS \\ \hline
-	7 & GPIO & 16 & RTS \\ \hline
+	10 & \(Rx\) & 2 & \(D_{OUT}\) \\ \hline
+	8 & \(Tx\) & 3 & \(D_{IN}\) \\ \hline
+	12 & \(GPIO\) & 5 & \(Reset\) \\ \hline
+	25 & \(GND\) & 10 & \(GND\) \\ \hline
+	13 & \(GPIO\) & 12 & \(Sleep\) \\ \hline
+	11 & \(GPIO\) & 13 & \(CTS\) \\ \hline
+	7 & \(GPIO\) & 16 & \(RTS\) \\
     \hline
   \end{tabular}
 \end{center}
 
 In addition to the pins required by the XBee module, three LEDs were placed on the Central Unit PCB. One LED is connected directly to the power supply showing that the board has power, the other two are connected to GPIO pins to be used for any purpose necessary.
+
 As the Central Unit does not require a wireless power supply, using the standard USB power cable was acceptable and provides a constant 5v 1000mA supply.
