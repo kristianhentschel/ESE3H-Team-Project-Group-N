@@ -67,9 +67,30 @@ The first implementation, which was used for testing the transport layer due its
 Due to the issues explained in \ref{software-impl}, transparent mode had to be dropped and a second packet layer implementation tailored to the ZigBee API mode was developed using the same API calls. This is described in the following sections.
 
 \subsubsection{Packet API}
-The public API for the packet layer is defined in \texttt{zb\_packets.h}.
+The public API for the packet layer is defined in \texttt{zb\_packets.h}. 
+
+Initialisation and settings are provided through the \texttt{zb\_packets\_init}, \texttt{zb\_set\_broadcast\_mode}, and \texttt{zb\_set\_device\_id} methods. In the current implementation, broadcast mode is the only way to set the target address: The master unit sends broadcast packages that are received by all scale units, and the scale units send unicast packages targeted only at the master unit. This state is held in a global variable, and it would be trivial to add functionality to support arbitrary target addresses, though this would require for the application layer to know about network or device addresses of the destination.
+
+%TODO missing abstraction: Stop/close/destroy call should be to packets layer and handed down to transport.
 
 \subsubsection{ZigBee Packet Structure and Parsing Methodology}
+The ZigBee API defines data frames transmitted across the serial link between the host and ZigBee device. These packets are parsed and, if the packet is a transmission request, wrapped in a different 80211x packet for transmission over the air, and re-packaged in a serial data frame on the other end.
+%TODO quote proper standard and check terminology
 
+Re-Transmission if checksums fail or no ACKs are received for these over-the-air packets is handled at the ZigBee layer that is equivalent to the Network layer in the OSI model, and in this implementation is completely independent from even the application transport layer. This was taken as a given as part of the decision to use the ZigBee devices and protocol, therefore the following discussion does not take this lower layer into account.
+
+%TODO check with stuff I've already said above - get picture from data sheet/re-make in inkscape with our data.
+
+Parsing of the incoming character stream is achieved through the \texttt{zb\_parse} method which must be called on every character received. It returns a status code to indicate when a complete packet has been received. At this point, globally available variables are filled with the relevant information (op code, device id, data, length) from the packet.
+
+This method is implemented as a finite-state-machine with the state maintained in static local variables. %TODO expand on this?
 
 \subsection{Application Layer}
+%TODO add interaction diagram to explain this.
+Figure \ref{interaction-diagram} shows the interaction between the various components for servicing a user request for updating the measurements. One scale unit is shown exemplary.
+
+\subsubsection{Master Unit and User Interface}
+request handlers, maintaining state, calibration and storage of sensor results.
+
+\subsubsection{Scale Unit}
+scale unit is an infinite loop: wait for packet, send response, wait for next. ADC set up for continuous DMA conversions.
