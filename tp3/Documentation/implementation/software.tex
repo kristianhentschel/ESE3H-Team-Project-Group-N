@@ -75,7 +75,6 @@ Initialisation and settings are provided through the \texttt{zb\_packets\_init},
 
 \subsubsection{ZigBee Packet Structure and Parsing Methodology}
 The ZigBee API defines data frames transmitted across the serial link between the host and ZigBee device. These packets are parsed and, if the packet is a transmission request, wrapped in a different 802.15.4 packet for transmission over the air, and re-packaged in a serial data frame on the other end.
-%TODO quote proper standard and check terminology
 
 Re-Transmission if checksums fail or no ACKs are received for these over-the-air packets is handled at the ZigBee layer that is equivalent to the Network layer in the OSI model, and in this implementation is completely independent from even the application transport layer. This was taken as a given as part of the decision to use the ZigBee devices and protocol, therefore the following discussion does not take this lower layer into account.
 
@@ -83,7 +82,7 @@ Re-Transmission if checksums fail or no ACKs are received for these over-the-air
 
 Parsing of the incoming character stream is achieved through the \texttt{zb\_parse} method which must be called on every character received. It returns a status code to indicate when a complete packet has been received. At this point, globally available variables are filled with the relevant information (op code, device id, data, length) from the packet.
 
-This method is implemented as a finite-state-machine with the state maintained in static local variables. 
+This method is implemented as a finite state machine with the state maintained in static local variables. This implementation is inspired by the Yacc parser/lexer architecture. In retrospect, these packages could well have been used for the implementation. Due to time constraints in the development phase, and initially starting off with a considerably smaller parser for the simpler packet structure, this was not fully considered before most of the implementation was completed. 
 
 \subsection{Application Layer}
 \begin{figure}
@@ -91,14 +90,20 @@ This method is implemented as a finite-state-machine with the state maintained i
 \label{communications-diagram}
 \caption{Application Level Communications Diagram}
 \end{figure}
-Figure \ref{communications-diagram} shows the interaction between the various components for servicing a user request for updating the measurements. One scale unit is shown exemplary.
+Figure \ref{communications-diagram} shows the interaction between the various components for servicing a user request for updating the measurements. One scale unit is shown exemplary. When multiple scale units are used, and all try to respond to the broadcast measure request, their packets are linearised by the receiving ZigBee coordinator.
 
 \subsubsection{Master Unit and User Interface}
-The user interface is implemented as an HTML web page styled with CSS and all client side logic is based on the jQuery Javascript library \cite{jquery} which provides abstraction for sending remote HTTP requests and handling responses to these.
+The user interface is implemented as an HTML web page styled with CSS and all client side logic is based on the jQuery Javascript library \cite{jquery} which provides abstraction for sending asynchronous HTTP requests and handling responses to these.
 
-Based on the use cases established in the requirements engineering section, the interface is kept as simple as possible. Four Sensor display elements are included, which show the raw value received from each sensor as well as the conversion to kilograms.
+Based on the use cases established in the requirements engineering section, the interface is kept as simple as possible. Four Sensor display elements are included, which show the raw value received from each sensor as well as the conversion to kilograms. A ``Measure'' button allows the user to request new data from the sensors, and refresh the display. Calibration functionality is implemented through another button - however this is a two-step process to minimise the risk of accidentally triggering the calibration.
 
-This conversion is performed on the server, as the method used for this is expected to change once specifications for the actual load cells are available.
+The conversion from sensor value to weight is performed on the server, as the method used for this is expected to change at a later stage. Similarly, the calibration method is implemented by storing an offset for each sensor on the master unit, which is updated with the current sensor readings when the user requests a calibration. As a placeholder for actual calibration and conversion functionality, the conversion is performed by dividing by a constant, where the calibration is just a fixed offset. It is expected that the methods for conversion and calibration will need to be significantly more complicated, as the strain gauge's change in resistance, and thus ADC input voltage, does not scale linearly with weight but can be approximated with \textbf{ASK JOSH WHAT MATHEMATICAL FUCNTION REPERSNTS THIS}.
+
+Finally, a minimal user manual/quick start reference is included under the ``Instructions'' section. This explains the colour coding and display rules used in the application, as well as the calibration mechanism.
+
+The master unit program is integrated with a web-server, which is single-threaded to keep the implementation as simple as possible. Since the system will only be used by one or two clients simultaneously, a high-performance implementation is not required as this point. A thread seperate to the webserver uses the packet layer to scan for incoming RF packets and update the thread-safe sensor results data structure with new values as they come in.
+
+Request handlers, which are called when an HTTP request matches an API call path, have been abstracted out into \texttt{requesthandlers.c} so that they can also be invoked manually in the master\_test command-line application. This file manages all state associated with sensors: Their last update time and value, settings such as the calibration offset, as well as a global indicator of when the last RF message was sent. This value is used to provide a primitive time-out mechanism to prevent overloading the serial and RF links if many measure requests come in simultaneously, either due to a bug in the client application or malicious intent. Within one second of the last measurement request, all new incoming measurement or calibration requests are ignored, and an error message is sent to the requesting client.
 
 \subsubsection{Scale Unit}
-scale unit is an infinite loop: wait for packet, send response, wait for next. ADC set up for continuous DMA conversions.
+The scale unit software has been kept very minimal. The same packet layer implementation written for the master unit is re-used here. The program consists of a single infinite loop that retrieves characters from the UART using the transport layer, calls the parser, and sends a response if a complete valid packet has been retrieved. The response data is read from the Analogue-to-Digital converter (ADC) that is connected to the strain gauge instrumentation amplifier.
