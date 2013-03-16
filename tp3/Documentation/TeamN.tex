@@ -2,8 +2,17 @@
 \documentclass{l3proj}
 \usepackage{hyperref}
 \usepackage{amsmath}
+\usepackage{graphicx}%
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{fullpage}
+\usepackage{tabularx}%
+\usepackage{url}%
+\usepackage{rotating} 
+\usepackage{longtable}
+
 \begin{document}
-\title{ESE3: Chose Your Own}
+\title{ESE3: Choose Your Own}
 \author{ \\
         Mustafa Altay\\
         Kristian Hentschel \\
@@ -73,6 +82,11 @@ The abstract goes here
 \subsection{Instrumentation Amplifier}
 \label{ina}
 \input{implementation/ina}
+\section{PCB Design}
+\label{pcb}
+\input{implementation/pcb}
+\subsection{Central Unit}
+\input{implementation/pcbcentral}
 %==============================================================================
 \chapter{Evaluation}
 \input{evaluation/evaluation}
