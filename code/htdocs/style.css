@@ -61,6 +61,10 @@ ol.results li.valid {
 	background-color: #efe;
 }
 
+ol.results li.invalid {
+	background-color: #fcc;
+}
+
 span.data {
     font-weight: bold;
 }

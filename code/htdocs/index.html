@@ -3,7 +3,7 @@
 	<head>
 		<title>Wireless Weighing System</title>
 		<link rel="stylesheet" type="text/css" href="style.css" />
-		<meta name="viewport" content="width=device-width; initial-scale=1; maximum-scale=1; user-scalable=no" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
 	</head>
 
 	<body>
@@ -49,10 +49,6 @@
 			</ol>
 			
 			<p>
-				<a class="button button-do do-data">Refresh Display</a>
-			</p>
-
-			<p>
 				<a class="button button-do do-measure">Measure</a>
 			</p>
 
@@ -79,7 +75,10 @@
 			<h1>Instructions</h1>
 			<p><strong>Measuring</strong>. Just hit the measurement button on the home screen and new data will appear in the sensor sections.<p>
 			<p><strong>Data Conversion</strong>. This is a prototype, and displayed weights are not properly converted to kilograms yet, as the strain gauges were not available for calibration.</p>
-			<p><strong>Colour-Coding</strong>. The sensor fields are colour-coded as follows to indicate the status of each sensor. <em>Green</em>: Data has successfully been received. <em>White</em>: A measurement has been requested and no response has been received from the server yet. If this state persists for all sensors, try to send a new measurement request. <em>Red (not implemented yet)</em>: The sensor has not responded to the most recent request. The previous data value is displayed. Try resending the request, and check that all sensor units are turned on.
+			<p><strong>Colour-Coding</strong>. The sensor fields are colour-coded as follows to indicate the status of each sensor.
+			<br /><em>Green</em>: Data has successfully been received.
+			<br /><em>White</em>: A measurement has been requested and no response has been received from the server yet. If this state persists for all sensors, try to send a new measurement request.
+			<br /><em>Red</em>: The sensor has not responded to the most recent request. The previous data value is displayed. Try resending the request, and check that all sensor units are turned on.
 			<p>
 				<a class="button button-left go-main" href="#screen-main">Back</a>
 			</p>
