@@ -1,6 +1,6 @@
 
 
-TeamN.pdf: TeamN.tex TeamN.bib
+TeamN.pdf: TeamN.tex citations.bib
 	pdflatex TeamN
 	bibtex TeamN
 	pdflatex TeamN
