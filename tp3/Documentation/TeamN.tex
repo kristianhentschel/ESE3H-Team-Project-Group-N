@@ -34,64 +34,84 @@ The abstract goes here
 %==============================================================================
 \chapter{Introduction}
 \label{intro}
+
 \section{Introduction}
 \input{intro/intro}
+
 \section{Background}
 \input{intro/background}
+
 \section{Motivation}
 \input{intro/motivation}
+
 \chapter{Requirements}
 \label{requirements}
 \input{requirements/requirements}
+
 \section{Requirements Gathering Process}
-\label{gathering}
+\label{sec:gathering}
 \input{requirements/gathering}
+
 \section{System Requirements}
-\label{system}
+\label{sec:system}
 \input{requirements/system}
 %==============================================================================
 \chapter{Design}
-\label{design}
+\label{chap:design}
+
 \section{Design Overview}
+\input{design/figures/star_topology}
 \input{design/overview}
+
 \subsection{Scale Units}
-\label{scale}
+\label{sec:scale}
 \input{design/scale}
+
 \subsection{Central Unit}
-\label{central}
+\label{sec:central}
 \input{design/central}
-\input{design/figures/block_diagram}
-\label{Block Diagram}
+
 \section{Hardware Design}
-\input{design/hardware/overview}
+\input{design/hardware}
+\input{design/figures/block_diagram}
 
 \section{Software Design}
 \input{design/software.tex}
 %==============================================================================
 \chapter{Software Implementation}
-\label{impl}
+\label{chap:software impl}
 \input{implementation/software}
 %==============================================================================
 \chapter{Hardware Implementation}
 \input{implementation/hardware}
+
 \section{Component Selection}
+
 \subsection{Microcontroller}
 \input{implementation/microcontroller}
+
 \subsection{Wireless Communication Modules}
 \input{implementation/wireless}
+
 \subsection{Strain Gauge and Wheatstone Bridge}
 \input{implementation/figures/bridge_diagram}
+
 \input{implementation/strain:bridge}
+
 \subsection{Instrumentation Amplifier}
 \label{ina}
 \input{implementation/ina}
+
 \subsection{Power}
 \input{implementation/power}
+
 \section{PCB Design}
 \label{pcb}
 \input{implementation/pcb}
+
 \subsection{Central Unit}
 \input{implementation/pcbcentral}
+
 \subsection{Scale Unit}
 \input{implementation/pcbscale}
 %==============================================================================
