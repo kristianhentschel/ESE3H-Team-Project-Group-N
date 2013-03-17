@@ -5,3 +5,20 @@ In order to keep the system as simple as possible it was decided to use a single
 The analogue as designed in section >< was placed close together on the PCB keeping it away from the digital data tracks in order to reduce interference.
 
 The initial design integrated PCB headers to directly interface with all the STM32F4 Discovery pins, however for the initial prototype three headers were used instead; two 6-pin headers, and one 16-pin header. Instead of having a singular power supply option, it was decided to instead create an interface to allow a number of different power supply options. This was implemented with a simple 2-pin molex header, which allows the board to be connected with a lab power pack and batteries simply by changing the connector. In addition to the power supply header a jumper was placed on the power tracks to measure the current being used by the system to allow accurate power usage to be calculated.
+
+\begin{center}
+  \begin{tabular}{| l | l | l | l | l |}
+    \hline
+    \bf{Pin (ARM)} & \bf{Function (ARM)} & \bf{Pin (XBee)} & \bf{Function (XBee)}  & \bf{Other}\\ \hline
+         $V_{DD}$ & $3v $& $1 $& $V_{CC} $& $ - $\\ \hline
+	 $PD9$ & \(Rx\) &$ 2$ &$ D_{OUT}$ &$ - $\\ \hline
+	 $PD8 $& \(Tx\) &$ 3$ &$ D_{IN}$ & $- $\\ \hline
+	 $PD12$ & \(RTS\) & $5$ & $CTS$ &$ - $ \\ \hline
+	 $PD11$ & $CTS$ & $16$ & $RTS$ & $-$ \\ \hline
+	 $GND$ & \(GND\) & $10$ & \(GND\) & $-$\\ \hline
+	$PC2 $ & \(GPIO\) & 12 & \(Sleep\) & $-$\\ \hline
+	$PC3 $ & \(GPIO\) & 10 & \(Reset\) & $-$ \\
+    \hline
+  \end{tabular}
+\label{Pi2XBeeTable}
+\end{center}
