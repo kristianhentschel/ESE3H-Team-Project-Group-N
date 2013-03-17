@@ -2,27 +2,37 @@ This section outlines how the system was evaluated and the results of that evalu
 
 \section{Testing Strategy and Results}
 
-In order to test the system fully there is a requirement to interface with the yet unbuilt load cell units, which is of course not currently possible. On the otherhand it has been possible to test to a reasonable degree the level of accuracy of the system using the potentionmeter based model of the load cell, this is done by repeatedly requesting measurements from the scale units without changing the resistance levels and detecting the variance on the output. 
+\subsection{Analogue System}
+Since the load cells were not available for testing, the analogue design has been verified by building a simple potentiometer circuit that covers the same range of resistance expected from the strain gauge. This has been connected to the amplifier, and the voltage range produced at the input to the ADC has been measured to match the design. In this test it was discovered that not the entire range was covered with the chosen value of instrumentation amplifier gain, in the physically built circuit, and work to discover defects in either the design or hardware built is underway.
 
-\textbf{TODO escribe strategy (what we would do, since we haven't done anything...)}
+Of course given that currently the system does not have an interface to the load cells, it is almost certain that modifications to the analogue design especially the instrumentation amplifier's calibration will need to be made. It would then be highly important to test the accuracy of the system using known weights and noting the output of the system. After this testing process further calibration would almost certainly be required potentially in both software tools and analogue design. 
 
-\section{Status Report}
+\subsection{Communications and Software System}
+The user interface was tested manually with a wide range of devices (Android, iOS phones, iPad tablet, laptop computers) and was shown to work well on different screen sizes and interaction models (mouse vs touch control). This test has been performed by members of the team, rather than external users.
 
-Analogue Design tested by replacing strain gauge with potentiometer of same resistance range, but it still does not work with the calculated gain resistance for the differential amplifier.
+Additionally, the system should be tested for robustness, especially in the harsher (in terms of potential RF interference that can cause packet corruption) environment of the workshops it will be used in.
 
-\section{Future Work}
+\subsection{User Study}
+Running a short user study with the client liaison in first place, to identify improvements to features and documentation, and then a number of other mechanical engineers involved in UGR is recommended. The focus for this should be how well the system holds up in the hands of inexperienced users who will have to re-deploy and maintain it in different locations. Another outcome from this should be suggestions for future work on the user interface, e.g. what other kinds of data analysis might be helpful to the users.
 
-If the project were to have more time dedicated to it, it would be prudent to test the ability of the system to deal with interference in both its ability to handle any packet loss or corruption but also the level of interference needed to cause packet corruption. If it were found that the packets were easily corrupted or that the system does not handle packet loss in an appropriate manner it might also be prudent to find a solution to this problem.
+It has been decided due to the late completion of the system and the lack of actual load cells (which were meant to be produced by another team comissioned by UGR) to postpone this test until the load cells are available.
 
-Integrate the Raspberry Pi master unit with a USB wifi dongle, configure hostapd and dnsmasq to create a hot-spot without hte need for an external router.
+\section{Status Report and Future Work}
+The basic functionality of the system, transmitting voltage levels from multiple units to the master unit and a flexible user interface, has been shown to work correctly. The scale units are currently using potentiometers rather than actual scales due to the load cells not being finished by the external supplier. Additional features such as the Raspberry Pi providing a WiFi network of its own through a USB dongle, and advanced calculations displayed in the user interface have not been completed.
 
-Of course given that currently the system does not correctly interface to the load cells, future work would almost certainly require modifications to the analogue design especially the instrumentation amplifier's calibration. It would then be highly important to test the accuracy of the system using known weights and noting the output of the system. After this testing process further calibration would almost certainly be required potentially in both software tools and analogue design. 
+The following list outlines all known deficiencies with the system, as well as suggestions on how these might be alleviated.
 
-Scale units should be ported to M0 based system which will lead to smaller PCB. Need to be placed in IP-65 boxes to meet client's requirements.
-WHAT IS MO BASED?
-
-Certain simple but inefficient solutions were given to problems that could be increased in complexity in order to reduce power usage, such as the ZigBee units configuration as router devices. This was done in order to stop them from going into "sleep" mode as they would do whilst configured as end-devices, stopping them from recieving new instruction without further coding. It would also be possible to implement some sort of transport layer logic in order to support pin sleep mode which would turn the radio off when not required.
-
-Currently there is no feedback from the user interface if the unit is unresponsive to a measurement request, this could easy be corrected if future work were to be performed on the system. 
-
-Run a user test with mechanical engineers who will be using the system, and confirm that it is simple enough for them to set-up and take down for redeployment in different locations. Provide a user manual.
+\begin{itemize}
+	\item \textbf{Power Usage}. The battery powered scale units were shown to draw about $250\unit{mA}$ constantly. This is a very high number, much more than the expected $100\unit{mA}$ or less. The system does not meet the requirement to run on battery power alone for a very long time.
+	\item \textbf{ZigBee Sleep Modes}. At the moment, the ZigBee devices attached to scale units are configured as ``Routers'' which means the radio is always active. In theory, these could be reconfigured as enddevices, where the parent node is queried for packets based on a short interval time. Through use of an external interrupt, the microcontroller on the parent board could also be put into a low-power mode and be activated again by the ZigBee receiving data.
+	\item \textbf{Scale Unit PCB Design and Cases}. The client requested spill-proof casing for the scale units to IP-65\cite{ip-standards}. It is expected that the scale unit PCB can be made a lot smaller, especially if the cheaper and smaller STM32F0 (with a Cortex M0 rather than M4 processor) is used. The current PCB is not optimized for size due to a last-minute change in component availability. It is envisioned that the client-suggested size of a 5cm by 5cm PCB can be reached.
+		\item \textbf{Master Unit Networking}. A working USB WiFi dongle could not be sourced in the time available. Online guides \cite{pi-wifi-dongles} suggest using a dongle with the Broadcom ``Ralink RT5370'' chipset that does support this access-point mode. The described configuration of hostapd and dnsmasq should be implemented and tested.
+   	\item \textbf{Master Unit Deployment}. The master unit, too should be supplied in a case of appropriate size and a mains power supply should be added -- for prototyping the board was powered using a USB phone charger. A method for shutting down the operating system gracefully must be developed, potentially through adding a button in the user interface, otherwise file system corruption can occur if the power is simply cut off. The webserver implementation should be started automatically on boot, and be changed to run on the default HTTP port (80).
+	\item \textbf{Master Unit Software}. The request-handlers implementation is a very quick hack and should be re-designed and fully tested. Integration with a more reliable webserver should be investigated, though for the prescribed use (only one or two clients), the system works well as it is.
+	\item \textbf{Scale Unit Software}. This should be adapted into an interrupt-driven architecture to allow for better flexibility and lower power usage. An LED controlled by the microcontroller to indicate battery status would be useful as well.
+	\item \textbf{Accuracy Testing}. Some theoretical calculations have been done on this front, but further testing on the impact of noise and amplifier gain error on the weight values reported by the system needs to to be done once the load cells are available.
+	\item \textbf{User Interface}. Visual feedback on unresponsive sensors is not yet implemented, though will require no changes to the server-side code and should be trivial to do. %maybe I will finish this tonight, in that case remove this entry TODO.
+	\item \textbf{General PCB Design}. A number of general purpose pins on the processors were connected to the ZigBee devices that were found to be unneccessary for the current design. Unless these features do get incorporated (e.g. ZigBee sleep request/status), these pins and the associated circuitry could be removed to simplify the design.
+	\item \textbf{Analogue Module}. The amplifier gain measured on the assembled PCBs does not correspond to the expected value in the theory, more work needs to be undertaken to confirm the design and perform error-checking on the circuit.
+	\item \textbf{Additional Scale Units}. For prototyping, only two of the required four scale units have been produced. Once the design has been fully debugged, four units will need to be produced and provided to the client.
+\end{itemize}
