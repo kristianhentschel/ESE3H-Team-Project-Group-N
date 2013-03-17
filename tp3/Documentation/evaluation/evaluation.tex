@@ -1,22 +1,32 @@
-Things that should be mentioned in here:
+This section outlines how the system was evaluated and the results of that evaluation.
 
-Integrate with strain gauges, update conversion method, test accuracy and calibration with known weights.
+\subsection{Testing Strategy and Results}
 
-Scale units should be ported to M0 based system which will lead to smaller PCB. Need to be placed in IP-65 boxes to meet client's requirements.
+In order to test the system fully there is a requirement to interface with the yet unbuilt load cell units, which is of course not currently possible. On the otherhand it has been possible to test to a reasonable degree the level of accuracy of the system using the potentionmeter based model of the load cell, this is done by repeatedly requesting measurements from the scale units without changing the resistance levels and detecting the variance on the output. 
 
-Power usage at 250mA for scale units is too high. Minimise power usage through power supply redesign. Also, the ZigBee devices on scale units should be configured as end-devices, and transport layer logic should support pin sleep mode to turn the radio off when it is not required.
+RESULTS THAT WE HAVNT DONE YET EEEEK?
 
-Test for robustness by modifying units to send invalid packets, or provide artificially generated RF interference.
+Output current tests
+//TODO
 
-Incorporate visual feedback in user interface if a unit does not respond to a measurement request.
 
-Run a user test with mechanical engineers who will be using the system, and confirm that it is simple enough for them to set-up and take down for redeployment in different locations. Provide a user manual.
-
-Integrate the Raspberry Pi master unit with a USB wifi dongle, configure hostapd and dnsmasq to create a hot-spot without hte need for an external router.
+\subsection{Status Report}
 
 Analogue Design tested by replacing strain gauge with potentiometer of same resistance range, but it still does not work with the calculated gain resistance for the differential amplifier.
 
-\subsection{Testing Strategy and Results}
-\subsection{Status Report}
 \subsection{Future Work}
 
+If the project were to have more time dedicated to it, it would be prudent to test the ability of the system to deal with interference in both its ability to handle any packet loss or corruption but also the level of interference needed to cause packet corruption. If it were found that the packets were easily corrupted or that the system does not handle packet loss in an appropriate manner it might also be prudent to find a solution to this problem.
+
+Integrate the Raspberry Pi master unit with a USB wifi dongle, configure hostapd and dnsmasq to create a hot-spot without hte need for an external router.
+
+Of course given that currently the system does not correctly interface to the load cells, future work would almost certainly require modifications to the analogue design especially the instrumentation amplifier's calibration. It would then be highly important to test the accuracy of the system using known weights and noting the output of the system. After this testing process further calibration would almost certainly be required potentially in both software tools and analogue design. 
+
+Scale units should be ported to M0 based system which will lead to smaller PCB. Need to be placed in IP-65 boxes to meet client's requirements.
+WHAT IS MO BASED?
+
+Certain simple but inefficient solutions were given to problems that could be increased in complexity in order to reduce power usage, such as the ZigBee units configuration as router devices. This was done in order to stop them from going into "sleep" mode as they would do whilst configured as end-devices, stopping them from recieving new instruction without further coding. It would also be possible to implement some sort of transport layer logic in order to support pin sleep mode which would turn the radio off when not required.
+
+Currently there is no feedback from the user interface if the unit is unresponsive to a measurement request, this could easy be corrected if future work were to be performed on the system. 
+
+Run a user test with mechanical engineers who will be using the system, and confirm that it is simple enough for them to set-up and take down for redeployment in different locations. Provide a user manual.

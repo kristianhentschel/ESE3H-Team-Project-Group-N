@@ -1,0 +1,5 @@
+Given that the scale units are required to be wireless, there is a necessity to use some form of battery power in order to keep them running. The client also requested that the batteries be easily replaceable i.e. available in most stores that sell batteries. This being the case there were certain limitations on choice for battery power. 
+
+On each scale unit there is a 5 volt regulator, this is in order to stop any power source providing more than 5 volts from damage the microcontroller; this device will draw a large amount of current if the power source is providing a voltage that is significantly more than 5 volts. This was also a serious consideration when making a decision on power source.
+
+Several options were initially considered such as a 9V lithium battery, but it was decided that this would have too much power drained by the voltage regulator as power dissipated is: $(V_{in} - V_{out}) times I_out$
