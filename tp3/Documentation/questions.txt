@@ -1,8 +1,12 @@
 I assume that we are going to have a glossary where we define load cell to an adiquate level so that i can just keep referring to it assuming people know what it means without actually telling them. 
+Yes need a glossary. I've got a bunch of terms in my section as well. -Kris
 
 is there a way to get rid of the pointless whitespace between chapters or is that the point of chapters? It just looks like funny to me because there are pages with single lines in them. Part of the problem seems to be that from the Contents page the header margins are massive compared to before and just massive in general.
+Lecturer's answer will be "use latex it's smarter than you are". they've given us that template to use, if it looks funny nothing we can or should do about it. -kris
 
 Is the contents meant to be red?
+Yes, as it's hyperlinked to the relevant sections - probably can be changed but I wouldn't bother - it's to be read on-screen mostly anyway. -kris
 
 presumably stuff like PCB images are appended on rather than popping up over the place
 
+Do we have an equation/shape of equation (quadratic/exponential/whatever) for the ADC->kilograms conversion?
