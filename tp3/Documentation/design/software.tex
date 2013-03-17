@@ -1,29 +1,29 @@
 The ``software'' encompasses all programs that run on the scale units, the master unit, and the user interface client-side code. Despite the vast differences between these targets, the software architecture is designed for maximum re-use across the platforms.
 
-
 \subsection{Master Unit Considerations}
-The master unit (Raspberry Pi) runs a full Linux operating systems, therefore more high-level languages and libraries could in theory be used.
+The master unit (Raspberry Pi) runs a full Linux operating systems, therefore more high-level languages and libraries can be used.
 
-Since the user interface was a web application, the master unit had to run a simple web-server that could serve the interface (HTML, Javascript, CSS files) as well as answer requests for dynamically generated information gathered from the scale units.
+Since the user interface will be a web application, the master unit has to run a simple web-server that can serve the static interface files (HTML, Javascript, CSS) as well as answer requests for dynamically generated information gathered from the scale units.
 
-As an initial prototype, the Python language with a webserver module \cite{bottle-py} was used. The open source project \cite{webiopi}, which allows controlling the GPIO pins through a web application, was briefly considered for building upon. However, the lack of support for serial port communication in this project, and handling of single bytes for communicating with the radio transmitters were found to be insufficiently reliable and scalable. This approach would also not have allowed much re-use of the packet generation and parsing code between the master and scale units.
+As an initial prototype, the Python language with the webserver module \emph{bottle} \cite{bottle-py} was considered for serving the user interface and data requests. The open source project \emph{webiopi} \cite{webiopi}, which allows controlling the GPIO pins through a web application, was briefly considered for building upon. However, the lack of support for low level serial port communications, i.e. handling of single bytes for communicating with the radio transmitters, as well as the lack of well-understood multi-threading capabilities meant that Python was abandoned for this project. It approach would also not have allowed much re-use of the packet generation and parsing code between the master and scale units, which had to be programmed in C in any case.
 
-Instead, it was decided to program the entire system in C, which the team had ample experience with through the third year programming courses. This decision was also affected by the fact that not much time was left to complete the project, and the web-server and client-side UI were deemed as optional features that could eventually be added in on top of this.
+Instead, it was decided to program the entire system (except for the client-side web application code), which the team had ample experience with through the third year programming courses. This decision was also affected by the fact that not much time was left to complete the project, and the web-server and client-side UI were deemed as optional features that could eventually be added in on top of the demo command line program.
 
 \subsection{Layered Approach}
 A layered approach to the software architecture was chosen. The system is modelled in three main layers, roughly following the OSI network systems model \cite{osi-model}. Each layer would define a well-known interface, and only the layer above would need to access this. Each layer can have several implementations to account for the fact that the embedded scale unit system would be very different from the Linux system on the master unit.
 
-For the wireless communications, all this builds on top of the network protocol (802.15) that is already implemented in the ZigBee devices.
+For the wireless communications, all this builds on top of the network protocol (802.15.4) that is already implemented in the ZigBee devices, so this is not discussed in great detail.
 
 \begin{itemize}
+	\item \textbf{ZigBee Layer:} This is a collection of all layer below those implemented specifically for this project. It handles the RF transmissions between the ZigBee modules and exchanges commands with the transport layer over a serial connection.
 	\item \textbf{Transport Layer:} The lowest layer maps primitive read and write methods to the underlying serial devices and provides buffering for incoming data.
 	\item \textbf{Packet Layer:} This implements a packet protocol and provides methods for parsing incoming data, as well as packaging outgoing data.
 	\item \textbf{Application Layer:} The highest layer implements the individual application functionality and defines responses to incoming packets, as well as interacting with other system components, such as the user interface or the analogue-to-digital converter.
 \end{itemize}
 
 \subsection{System Setup and Additional Software}
-For the Raspberry Pi, the Raspbian Linux distribution was chosen due to it being based on the well-supported Debian, and its wide adoptation in the Raspberry Pi community. This meant a lot of standard software packages and configuration guides were available.
+For the Raspberry Pi, the Raspbian Linux\cite{raspbian} distribution was chosen due to it being based on the well-supported Debian, and its wide adoptation in the Raspberry Pi community. This meant a lot of standard software packages and configuration guides were available.
 
-As a graphical user interface was not required, the system would be stripped down to boot into the command line terminal, and it will mostly be accessed remotely through secure shell (ssh). This reduced the space required for backups, as well as boot up delay, considerably.
+As a graphical user interface for the operating system is not required (the system will be working without a screen or keyboard attached except for debugging), it would be stripped down to boot directly into a command line terminal environment. All deployment and configuration work on the Raspberry Pi can then be done through the secure shell (ssh) over a network connection. Removing these unnecessary graphical packages reduced the space required for backups, as well as boot up delay, considerably.
 
-As mentioned in \ref{system-design}, a wireless access point should be provided by the Raspberry Pi and attached USB WiFi dongle. For this, the software packages \texttt{hostapd}\cite{hostapd}, which creates the access point and handles client authentication, and \texttt{dnsmasq}\cite{dnsmasq}, which is a DHCP server (providing IP and routing information to connecting clients) and DNS server (allowing use of named hosts on the local network), were chosen. This setup was prototyped, but due to lacking hardware support for Access Point mode in the available WiFi dongles, had to be abandoned in favor of falling back to connecting the Raspberry Pi to an external WiFi router via Ethernet.
+As mentioned in \ref{section:system-design}, a wireless access point can be provided by the Raspberry Pi and attached USB WiFi dongle. For this, the software packages \texttt{hostapd}\cite{hostapd}, which creates the access point and handles client authentication, and \texttt{dnsmasq}\cite{dnsmasq}, which is a DHCP server (providing IP and routing information to connecting clients) and DNS server (allowing use of named hosts on the local network), were chosen. This setup was prototyped, but due to lacking hardware support for Access Point mode in the available WiFi dongles, had to be abandoned in favor of falling back to connecting the Raspberry Pi to an external WiFi router via Ethernet.
