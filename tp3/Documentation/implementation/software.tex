@@ -44,9 +44,9 @@ This polling method uses busy waiting, and is therefore is inherently using more
 
 Since the serial data rate for the ZigBee units (in default configuration) is 9600 baud, and the clock speed of the microcontroller is 168MHz, there is more than enough time\footnote{The development environment, Keil MDK, does not actually support profiling or displaying cycle counts to substantiate this claim. However, there is not much processing involved in a single call to \texttt{zb\_parse} as can be seen from the C implementation or the disassembly: Each of the states only requires about 20 instructions, and only one of these paths is executed in every call.} to complete any required processing inbetween receiving two characters:
 
-\begin{centered}
+\begin{center}
 	$168 \unit{MHz} \cdot \frac{1}{9600 \unit{baud}} = 105000 \unit{\frac{clock cycles}{symbol}}$
-\end{centered}
+\end{center}
 
 A flaw in the current design is that no data can be received if it is sent while the unit is currently also sending data. This case should be rare, and did not occur during testing, but may still be possible. It should not cause complete system failure, but the packet to be received will be lost and needs to be retransmitted completely by the other end's transport layer, which can currently only be achieved by the application requesting the same packet to be sent again. Retransmission by the ZigBee layer does not solve the issue, as the RF ACK will have been sent, but there is currently no dedicated acknowledgement of UART frames, though this is supported by the ZigBee devices. %TODO reword this - does it make sense?
 
