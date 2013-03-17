@@ -9,8 +9,8 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="365.63477"
-   height="214.51511"
+   width="340.65918"
+   height="179.08203"
    id="svg2"
    version="1.1"
    inkscape:version="0.48.0 r9654"
@@ -24,9 +24,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="1.979899"
-     inkscape:cx="134.86373"
-     inkscape:cy="133.55517"
+     inkscape:zoom="1.4"
+     inkscape:cx="326.11363"
+     inkscape:cy="58.325084"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -37,7 +37,7 @@
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
      fit-margin-top="0"
-     fit-margin-bottom="1"
+     fit-margin-bottom="0"
      fit-margin-right="0"
      fit-margin-left="0"
      units="cm">
@@ -460,9 +460,9 @@
        id="text4318"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
-         id="tspan4320"
          x="535"
-         y="302.36218">ZigBee Transmit Frame</tspan></text>
+         y="302.36218"
+         id="tspan4326">Transmit Request</tspan></text>
     <text
        xml:space="preserve"
        style="font-size:10px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:Serif;-inkscape-font-specification:Serif"
