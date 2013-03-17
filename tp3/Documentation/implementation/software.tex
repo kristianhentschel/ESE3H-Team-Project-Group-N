@@ -95,7 +95,7 @@ The ADC peripheral has been configured in continous conversion DMA (direct memor
 
 
 \subsection{User Interface}
-The user interface to the system has been defined \ref{section:requirements} to be a very simple web application that should support taking readings of the current system state by intitiating measurements, as well as providing simple calibration of the scales. A mock-up was drawn up, and based on this a static HTML/CSS prototype was generated. This was then made interactive by attaching Javascript actions to the buttons.
+The user interface to the system has been defined in section \ref{requirements} to be a very simple web application that should support taking readings of the current system state by intitiating measurements, as well as providing simple calibration of the scales. A mock-up was drawn up, and based on this a static HTML/CSS prototype was generated. This was then made interactive by attaching Javascript actions to the buttons.
 
 The client side (running in the user's web-browser) logic is implemented using the jQuery Javascript framework \cite{jquery} which provides simple abstractions for modifying the displayed documents (switching between sections and responding to user events such as button clicks), sending asynchronous HTTP requests, and parsing responses to them. This is used to make calls to special paths that are mapped to methods initiating data transfers between the master and scale units, or returning data previously stored on the server:
 
