@@ -93,7 +93,7 @@ The conversion from sensor value to weight is performed on the server. Similarly
 \subsection{Scale Unit}
 The scale unit software has been kept very minimal. The same packet layer implementation written for the master unit is re-used here. The program consists of a single infinite loop that retrieves characters from the UART using the transport layer, calls the parser, and sends a response if a complete valid packet has been retrieved. The response data is read from the ADC that is connected to the strain gauge instrumentation amplifier.
 
-The ADC peripheral has been configured in continous conversion DMA (direct memory access) mode. This means that the conversions are handled purely by hardware, and the results can be accessed through a global variable at any time with no additional delay or processing. The conversion rate for this is \textbf{CONVERSION RATE FOR DMA MODE ADC AND SOURCE FOR THIS}.
+The ADC peripheral has been configured in continous conversion DMA (direct memory access) mode. This means that the conversions are handled purely by hardware, and the results can be accessed through a global variable at any time with no additional delay or processing. The conversion rate for this is $2\unit{Msps}$, so a single conversion takes less than $500\unit{ns}$ \cite[page 125]{stm32f4-trm}.
 
 
 \subsection{User Interface}
