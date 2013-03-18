@@ -1,3 +1,9 @@
+/*
+ * main.c
+ *
+ * Main program for the scale unit / stm32f4 board. Based on examples provided by ST.
+ *
+ */
 #include "stm32f4_discovery.h"
 #include <stdio.h>
 #include "zb_packets.h"
