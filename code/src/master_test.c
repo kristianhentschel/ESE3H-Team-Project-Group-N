@@ -75,6 +75,7 @@ int main(void) {
 /* this could/should be a separate thread. */
 static void *thread_parse(void *arg) {
 	char c;
+	(void) arg;
 
 	while(1){
 		c = zb_getc();

@@ -127,6 +127,7 @@ void zb_guard_delay() {
 /* worker thread for monitoring serial device and putting stuff into buffer */
 static void *serial_monitor(void *arg) {
 	char c;
+	(void) arg;
 
 	printf("starting to read\n");
 	while (read(serial_fd, &c, 1) > 0) {

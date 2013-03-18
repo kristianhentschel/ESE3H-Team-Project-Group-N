@@ -384,6 +384,7 @@ void handle_request(int fd, char *request) {
 
 static void *thread_zb_listen(void *arg) {
 	char c;
+	(void) arg;
 
 	while(1){
 		c = zb_getc();

@@ -28,7 +28,7 @@ int main(void) {
 			case ZB_VALID_PACKET:
 				if (zb_packet_op == OP_MEASURE_REQUEST) {
 					printf("received measurement request packet");
-					zb_send_packet(OP_MEASURE_RESPONSE, "0080", 4);
+					zb_send_packet(OP_MEASURE_RESPONSE, (unsigned char *) "0080", 4);
 				} else if (zb_packet_op == OP_PING) {
 					printf("received PING\n");
 					zb_send_packet(OP_PONG, NULL, 0);
