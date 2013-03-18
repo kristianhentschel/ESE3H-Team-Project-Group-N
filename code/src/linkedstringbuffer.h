@@ -1,3 +1,7 @@
+/*
+ * this file was part of the network systems 3 coursework, and has not been changed for this project
+ */
+
 #ifndef __LINKEDSTRINGBUFFER_H__
 #define __LINKEDSTRINGBUFFER_H__
 
