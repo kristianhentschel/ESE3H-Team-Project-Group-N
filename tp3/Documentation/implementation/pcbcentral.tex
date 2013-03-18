@@ -6,7 +6,7 @@ A simple protection circuit can be created using a resistor and Zener diode as s
 
 Due to the fact that the Raspberry Pi can only produce 50mA over the 3v3 pin, in order to power the XBee module that uses over close to 50mA when broadcasting, the 5v pin on the Raspberry Pi was need. This can provide up to 700mA although at 5v, this meant that a 3v3 voltage regulator was required to power the XBee module, this came in the form of an 'ST LD1117' which was available from the University of Glasgow Electrical Components Store. The 'ST LD1117' comes with a low drop out voltage of 1v therefore requiring a minimum supply of 4v. With the voltage regulator come the decoupling capacitors, as suggested by the supplied datasheet.
 
-The pins between the Raspberry Pi and XBee module were connected as shown in table ~\ref{Pi2XBeeTable}.
+The pins between the Raspberry Pi and XBee module were connected as shown in table ~\ref{interfacePiXBee}.
 
 
 \begin{center}
