@@ -1,6 +1,6 @@
 The Wireless Weighing System requires two different microcontrollers, one for the Central Unit and another for the Scale Units. 
 \subsubsection{The Central Unit}
-The Central Unit requires the ability to access or create a wireless network in order to broadcast data to the display units via an installed web server. The Raspberry Pi provides all the functionality that is required, mainly:
+The Central Unit requires the ability to access or create a wireless network in order to broadcast data to the display units via an installed web server. The Raspberry Pi \cite{raspberrypi} provides all the functionality that is required, mainly:
 	\begin{itemize}
 		\item the ability to run the Linux operating system (web server)
 		\item Ethernet port
@@ -16,7 +16,7 @@ The Raspberry Pi is also ideal as a Central Unit as it is small and portable, be
 \subsubsection{Scale Unit}
 The microcontroller for the Scale Unit has much fewer requirements than the controller required for the Central Unit. The primary requirement for the Scale Units is the ability to take data from the strain gauges, this requires an Analogue to Digital Convertor (ADC) to convert the analogue signal from the load cell into a digital signal that can be read by the microcontroller. Most microcontroller packages contain an ADC, so finding a package which would meet the requirements without the addition of an larger external ADC became a primary aim of the team in the selection of a microcontroller for the Scale Units. 
 
-\centerline{\(\frac{V_{FS}}{2^{N}} = LSB  \)}
+\centerline{\(\frac{V_{FS}}{2^{N}} = LSB  \)} \cite[page 9]{edp2}
 \label{LSBeq}
 
 Equation ~\ref{LSBeq} is normally used to show the Least Significant Bit, or the change in input voltage required to change the output by exactly 1 bit. This equation can however, be changed to show in the case of the Wireless Weighing System, the change in weight to change the output by exactly 1 bit.

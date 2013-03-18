@@ -1,9 +1,9 @@
-There were a number of different constraints placed on the creation of the initial prototype of the Wireless Weighing System. These constraints come from the PCB construction facilities available at the University of Glasgow. Students are capable of working with the majority of through hole components such as Plastic Dual In-line Packages (PDIP), TO-XX, and some large surface mounted components, this constraint is due to all soldering being done by hand.
+There were a number of different constraints placed on the creation of the initial prototype of the Wireless Weighing System. These constraints come from the PCB construction facilities available at the University of Glasgow. Students are capable of working with the majority of through hole components such as Plastic Dual In-line Packages (PDIP), TO-xx, and some large surface mounted components, this constraint is due to all soldering being done by hand.
 
 Although it is possible to use surface mounted components, there are a high potential in causing damage to the component. With this added risk, the decision was made to only use through hole components, this limited the choice of certain components such as microcontrollers, amplifiers and wireless modules.
 
 Although limited in the number of microcontrollers that are available for use, there is still a few that are available in PDIP packages. However, those that are available are limited in features primarily when it comes to ADCs. In order to meet the requirements of having a resolution of less than 1kg at least a 10-bit ADC is required, assuming a maximum of 100kg on each scale.
 
 \begin{center}
-$N_{ADC} = \frac{V_{in}}{LSB}$
+$N_{ADC} = \frac{V_{in}}{LSB}$ \cite[page 8]{edp2}
 \end{center}
