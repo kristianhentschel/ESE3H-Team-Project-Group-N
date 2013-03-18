@@ -1,34 +1,35 @@
-The Wireless Weighing System requires two different microcontrollers, one for the Central Unit and another for the Scale Units. 
+The Wireless Weighing System requires two, different microcontrollers, one for the central unit and another for the scale units. Different microcontrollers are being used as the level of performance required from the scale unit system is much lower than that of the central unit.
+
 \subsubsection{The Central Unit}
-The Central Unit requires the ability to access or create a wireless network in order to broadcast data to the display units via an installed web server. The Raspberry Pi \cite{raspberrypi} provides all the functionality that is required, mainly:
+The central unit requires the ability to access or create a wireless network in order to broadcast data to the display units via an installed web server. The Raspberry Pi \cite{raspberrypi} provides all the functionality that is required, mainly:
 	\begin{itemize}
 		\item the ability to run the Linux operating system (web server)
 		\item Ethernet port
 		\item a large number of networking options:
 			\begin{itemize} 
-				\item USB connectors for potential Bluetooth
+				\item USB connectors for potential Bluetooth or WiFi
 				\item GPIO pins for RF
-				\item UART capabilities
+				\item UART peripheral, accessible via outside pins
 			\end{itemize}
 	\end{itemize}
-The Raspberry Pi is also ideal as a Central Unit as it is small and portable, being the size of a credit card. It also has the ability to be connected to a screen and hence provides a platform to both program and debug the system easily. As the Raspberry Pi is powered with a $5v$ supply from a USB connection it is possible to have it powered from a computer, wall socket or a battery.
+The Raspberry Pi is also ideal as a central unit as it is small and portable, being the size of a credit card. It also has the ability to be connected to a screen and hence provides a platform to both program and debug the system easily. As the Raspberry Pi is powered with a $5\unit{V}$ supply from a USB connection it is possible to have it powered from a computer, wall socket or a battery.
 
-\subsubsection{Scale Unit}
-The microcontroller for the Scale Unit has much fewer requirements than the controller required for the Central Unit. The primary requirement for the Scale Units is the ability to take data from the strain gauges, this requires an Analogue to Digital Convertor (ADC) to convert the analogue signal from the load cell into a digital signal that can be read by the microcontroller. Most microcontroller packages contain an ADC, so finding a package which would meet the requirements without the addition of an larger external ADC became a primary aim of the team in the selection of a microcontroller for the Scale Units. 
+\subsubsection{scale unit}
+The microcontroller for the scale unit has much lower requirements than the controller required for the central unit. The primary requirement for the scale units is the ability to take data from the strain gauges, this requires an Analogue to Digital Converter (ADC) to convert the analogue signal from the load cell into a digital signal that can be read by the microcontroller. Most microcontroller packages contain an ADC, so finding a package which would meet the requirements without the addition of an larger external ADC became a primary aim of the team in the selection of a microcontroller for the scale units. 
 
 \centerline{\(\frac{V_{FS}}{2^{N}} = LSB  \) \cite{edp2}}
 \label{LSBeq}
 
-Equation ~\ref{LSBeq} is normally used to show the Least Significant Bit, or the change in input voltage required to change the output by exactly 1 bit. This equation can however, be changed to show in the case of the Wireless Weighing System, the change in weight to change the output by exactly 1 bit.
+Equation ~\ref{LSBeq} is normally used to show the Least Significant Bit, or the change in input voltage required to change the output by exactly 1 bit. This equation can, however, be changed to show the change in weight to change the output by exactly 1 bit.
 The requirements state that the full weight that the system is required to measure will be a maximum of 250kg. Although each scale will not have to take the full weight of car, the weight distribution is unknown, therefore, the design decision was made to ensure that each scale would be rated to 250kg.  \\
 
 \centerline{$\frac{Full Weight}{2^{N}} = LSB$}  \label{LSBeq2}
 
-The HCS08 family of microcontrollers from Freescale, this would be the first choice for the scale units due to the teams familiarity to the architecture from previous electronics courses. However, the HCS08 \cite{HCS08} PDIP components only have a 10 bit ADC.\\
+The HCS08 family of microcontrollers from Freescale would have been the first choice for the scale units due to the team's familiarity to the architecture from previous electronics courses. However, the HCS08 \cite{HCS08} PDIP components only have a 10 bit ADC.\\
 
 \centerline{$\frac{250kg}{2^{10}} = 0.24kg$} \label{LSBeq3}
 
-Although this meets the clients requirements and the MC9S08GB60 \cite{MC9S08GB60} comes in an SDIP package, if a 12-bit ADC is used the accuracy of the Scale Units would be greatly increased. Whilst consulting Dr Martin Macauley about which microcontrollers could be used by the development tools already available in the School of Electronics and Electrical Engineering, the STM32Fx Discovery series of microcontrollers was mentioned. The STM32F4 Discovery \cite{STM32F4} boards come pre-assembled, and include a programmer and USB debugging interface, as well as a hardware UART unit for serial communication and a 12-bit ADC, which will make development simpler than designing a complete circuit around a discrete microcontroller unit.  Using a 12-bit ADC will allow a resolution from the strain gauge of less than 100g. 
+Although this meets the client's requirements and the MC9S08GB60 \cite{MC9S08GB60} comes in an SDIP package, if a 12-bit ADC was used the accuracy of the scale units would be greatly increased. Whilst consulting Dr Martin Macauley about which microcontrollers could be used by the development tools already available in the School of Electronics and Electrical Engineering, the STM32Fx Discovery series of microcontroller boards was mentioned. The STM32F4 Discovery \cite{STM32F4} boards come pre-assembled, and in addition to the microcontroller include a programmer and USB debugging interface, as well as a hardware UART unit for serial communication. The ARM Cortex M4 processor used also comes with a 12-bit ADC. This will make development simpler than designing a complete circuit around a discrete microcontroller unit.  Using a 12-bit ADC will allow a resolution from the strain gauge of less than 100g. 
 \\
 
 \centerline{$\frac{250kg}{2^{12}} = 0.06kg$}
